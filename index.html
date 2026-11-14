@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0d10">
+<title>DriveDash – Light Lab</title>
+<style>
+  :root { --bg:#0b0d10; --card:#151a20; --line:#252c35; --text:#e8edf2; --dim:#8a96a3; --acc:#4ea1ff; --ok:#3ecf8e; --bad:#ff5d5d; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Roboto,sans-serif; background:var(--bg); color:var(--text); padding:14px; padding-bottom:40px; }
+  h1 { font-size:20px; margin:4px 0 2px; }
+  .sub { color:var(--dim); font-size:13px; margin-bottom:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .card h2 { font-size:15px; margin:0 0 10px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; }
+  button { font:inherit; font-size:16px; padding:14px 16px; border-radius:12px; border:1px solid var(--line); background:#1e252e; color:var(--text); cursor:pointer; }
+  button:active { transform:scale(.97); }
+  button.primary { background:var(--acc); border-color:var(--acc); color:#04121f; font-weight:600; width:100%; }
+  button:disabled { opacity:.4; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .swatch { height:54px; border:none; }
+  .status { font-size:14px; margin-top:10px; color:var(--dim); }
+  .status b.ok { color:var(--ok); } .status b.bad { color:var(--bad); }
+  select, input[type=text] { font:inherit; font-size:15px; width:100%; padding:12px; border-radius:10px; border:1px solid var(--line); background:#0f1318; color:var(--text); }
+  label { display:block; font-size:13px; color:var(--dim); margin:10px 0 4px; }
+  .fam { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 0; border-top:1px solid var(--line); }
+  .fam:first-of-type { border-top:none; }
+  .fam .name { font-size:14px; }
+  .fam .name small { display:block; color:var(--dim); font-size:12px; }
+  .fam .row button { padding:10px 12px; font-size:14px; }
+  pre { background:#0f1318; border:1px solid var(--line); border-radius:10px; padding:10px; font-size:12px; max-height:260px; overflow:auto; white-space:pre-wrap; word-break:break-all; margin:0; }
+  .hint { font-size:13px; color:var(--dim); line-height:1.45; }
+  input[type=range] { width:100%; }
+</style>
+</head>
+<body>
+<h1>DriveDash · Light Lab</h1>
+<div class="sub">Step 1: find out how the YX_LED fiber light talks.</div>
+
+<div class="card">
+  <h2>Connect</h2>
+  <button class="primary" id="btnConnect">Scan &amp; connect</button>
+  <div class="row" style="margin-top:8px">
+    <button id="btnDisconnect" disabled style="flex:1">Disconnect</button>
+  </div>
+  <div class="status" id="status">Not connected.</div>
+  <label for="extraSvc">Extra service UUIDs (optional, comma-separated — use if nRF Connect shows a custom one)</label>
+  <input type="text" id="extraSvc" placeholder="e.g. 0000ffe0-0000-1000-8000-00805f9b34fb">
+</div>
+
+<div class="card">
+  <h2>Write target</h2>
+  <select id="charSel" disabled><option>Connect first</option></select>
+  <div class="hint" style="margin-top:8px">Writable characteristics found on the light. The first likely one is auto-selected.</div>
+</div>
+
+<div class="card">
+  <h2>Protocol finder</h2>
+  <div class="hint" style="margin-bottom:6px">Tap <b>Red</b> on each row. The row that turns the light red is our protocol. Then try Off/On on that row.</div>
+  <div id="families"></div>
+</div>
+
+<div class="card">
+  <h2>Quick control (uses found protocol)</h2>
+  <div class="hint" id="famChosen" style="margin-bottom:8px">No protocol chosen yet — tap “Use this” on a row above once one works.</div>
+  <div class="grid" id="swatches"></div>
+  <label for="bright">Brightness</label>
+  <input type="range" id="bright" min="5" max="100" value="100">
+</div>
+
+<div class="card">
+  <h2>Raw hex</h2>
+  <input type="text" id="rawHex" placeholder="7e 00 05 03 ff 00 00 00 ef">
+  <div class="row" style="margin-top:8px">
+    <button id="btnRaw" style="flex:1">Send</button>
+    <button id="btnRawNR" style="flex:1">Send (no response)</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Device map &amp; log</h2>
+  <div class="row" style="margin-bottom:8px">
+    <button id="btnCopy" style="flex:1">Copy log</button>
+    <button id="btnClear" style="flex:1">Clear</button>
+  </div>
+  <pre id="log"></pre>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const logEl = $('log');
+  const log = (...a) => { const t = new Date().toLocaleTimeString(); logEl.textContent += `[${t}] ${a.join(' ')}\n`; logEl.scrollTop = logEl.scrollHeight; };
+  const hex = buf => [...new Uint8Array(buf.buffer || buf)].map(b => b.toString(16).padStart(2,'0')).join(' ');
+  const parseHex = s => new Uint8Array((s.replace(/0x/gi,'').match(/[0-9a-f]{2}/gi) || []).map(h => parseInt(h,16)));
+
+  // Common service UUIDs used by cheap BLE LED controllers (must be pre-declared for Web Bluetooth).
+  const u16 = n => `0000${n.toString(16).padStart(4,'0')}-0000-1000-8000-00805f9b34fb`;
+  const COMMON = [0xfff0,0xffe0,0xffd0,0xffd5,0xffe5,0xff00,0xff10,0xffb0,0xae00,0xa950,0xfee7,0xffc0,0x1800,0x1801,0x180a,0x180f,0xfe59,0xff12,0xfa00,0xab00]
+    .map(u16).concat(['6e400001-b5a3-f393-e0a9-e50e24dcca9e','0000ae30-0000-1000-8000-00805f9b34fb']);
+
+  let device = null, chars = [], target = null, chosen = null, lastRGB = [255,255,255];
+
+  // Known protocol families. Each returns byte arrays.
+  const FAMILIES = [
+    { id:'elk', name:'ELK-BLEDOM / Lotus', note:'7e 00 05 03 RR GG BB 00 ef',
+      color:(r,g,b)=>[0x7e,0x00,0x05,0x03,r,g,b,0x00,0xef], on:()=>[0x7e,0x00,0x04,0xf0,0x00,0x01,0xff,0x00,0xef], off:()=>[0x7e,0x00,0x04,0x00,0x00,0x00,0xff,0x00,0xef],
+      bright:p=>[0x7e,0x00,0x01,p,0x00,0x00,0x00,0x00,0xef] },
+    { id:'melk', name:'MELK / LEDBLE (7e 07)', note:'7e 07 05 03 RR GG BB 10 ef',
+      color:(r,g,b)=>[0x7e,0x07,0x05,0x03,r,g,b,0x10,0xef], on:()=>[0x7e,0x04,0x04,0xf0,0x00,0x01,0xff,0x00,0xef], off:()=>[0x7e,0x04,0x04,0x00,0x00,0x00,0xff,0x00,0xef],
+      bright:p=>[0x7e,0x04,0x01,p,0x01,0xff,0x02,0x01,0xef] },
+    { id:'triones', name:'Triones / HappyLighting / MagicHome', note:'56 RR GG BB 00 f0 aa',
+      color:(r,g,b)=>[0x56,r,g,b,0x00,0xf0,0xaa], on:()=>[0xcc,0x23,0x33], off:()=>[0xcc,0x24,0x33], bright:null },
+    { id:'banlanx', name:'BanlanX SP110E-style', note:'RR GG BB 1e',
+      color:(r,g,b)=>[r,g,b,0x1e], on:()=>[0,0,0,0xaa], off:()=>[0,0,0,0xab], bright:p=>[Math.round(p*2.55),0,0,0x2a] },
+    { id:'zengge', name:'Zengge / LEDnet (31)', note:'31 RR GG BB 00 f0 0f + sum',
+      color:(r,g,b)=>{const a=[0x31,r,g,b,0x00,0xf0,0x0f]; a.push(a.reduce((s,x)=>s+x,0)&0xff); return a;},
+      on:()=>[0x71,0x23,0x0f,0xa3], off:()=>[0x71,0x24,0x0f,0xa4], bright:null },
+    { id:'sp6', name:'Generic AA-header', note:'aa 01 RR GG BB … 55',
+      color:(r,g,b)=>[0xaa,0x01,r,g,b,0x55], on:()=>[0xaa,0x02,0x01,0x55], off:()=>[0xaa,0x02,0x00,0x55], bright:null },
+  ];
+
+  const setStatus = (html) => $('status').innerHTML = html;
+
+  async function write(bytes, noResp=false) {
+    if (!target) { log('No write target selected'); return; }
+    const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    try {
+      const p = target.properties;
+      if ((noResp || !p.write) && p.writeWithoutResponse) await target.writeValueWithoutResponse(data);
+      else if (target.writeValueWithResponse) await target.writeValueWithResponse(data);
+      else await target.writeValue(data);
+      log('→', target.uuid.slice(4,8), hex(data));
+    } catch (e) { log('✗ write failed:', e.message); }
+  }
+
+  function renderFamilies() {
+    const wrap = $('families'); wrap.innerHTML = '';
+    for (const f of FAMILIES) {
+      const d = document.createElement('div'); d.className = 'fam';
+      d.innerHTML = `<div class="name">${f.name}<small>${f.note}</small></div>
+        <div class="row">
+          <button data-a="red" style="color:#ff6b6b">Red</button>
+          <button data-a="off">Off</button>
+          <button data-a="on">On</button>
+          <button data-a="use">Use this</button>
+        </div>`;
+      d.querySelector('[data-a=red]').onclick = () => write(f.color(255,0,0));
+      d.querySelector('[data-a=off]').onclick = () => write(f.off());
+      d.querySelector('[data-a=on]').onclick  = () => write(f.on());
+      d.querySelector('[data-a=use]').onclick = () => { chosen = f; $('famChosen').textContent = `Using: ${f.name} on ${target ? target.uuid.slice(4,8) : '?'}`; log('Chosen protocol:', f.name); };
+      wrap.appendChild(d);
+    }
+  }
+
+  function renderSwatches() {
+    const cols = [['#ff0000',255,0,0],['#ff6a00',255,90,0],['#ffd000',255,200,0],['#00ff40',0,255,60],
+                  ['#00e5ff',0,220,255],['#0040ff',0,60,255],['#a000ff',160,0,255],['#ffffff',255,255,255]];
+    const g = $('swatches');
+    for (const [css,r,g2,b] of cols) {
+      const btn = document.createElement('button'); btn.className = 'swatch'; btn.style.background = css;
+      btn.onclick = () => sendColor(r,g2,b); g.appendChild(btn);
+    }
+    const off = document.createElement('button'); off.textContent = 'Off'; off.style.gridColumn='span 2';
+    off.onclick = () => chosen && write(chosen.off());
+    const on = document.createElement('button'); on.textContent = 'On'; on.style.gridColumn='span 2';
+    on.onclick = () => chosen && write(chosen.on());
+    g.append(off,on);
+  }
+
+  function sendColor(r,g,b) {
+    if (!chosen) { log('Pick a protocol first (“Use this”)'); return; }
+    lastRGB = [r,g,b];
+    const p = +$('bright').value / 100;
+    if (chosen.bright) write(chosen.color(r,g,b));
+    else write(chosen.color(Math.round(r*p),Math.round(g*p),Math.round(b*p)));
+  }
+  $('bright').onchange = () => {
+    if (!chosen) return;
+    const v = +$('bright').value;
+    if (chosen.bright) write(chosen.bright(v)); else sendColor(...lastRGB);
+  };
+
+  async function connect() {
+    if (!navigator.bluetooth) { setStatus('<b class="bad">Web Bluetooth not available.</b> Use Chrome on Android, opened from an https:// address.'); return; }
+    const extra = $('extraSvc').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean)
+      .map(s => /^[0-9a-f]{4}$/.test(s) ? u16(parseInt(s,16)) : s);
+    try {
+      setStatus('Choose the YX_LED device in the popup…');
+      device = await navigator.bluetooth.requestDevice({ acceptAllDevices:true, optionalServices:[...COMMON, ...extra] });
+      device.addEventListener('gattserverdisconnected', () => { setStatus('<b class="bad">Disconnected.</b>'); log('Disconnected'); $('btnDisconnect').disabled = true; });
+      setStatus(`Connecting to ${device.name || 'device'}…`);
+      const server = await device.gatt.connect();
+      log('Connected to', device.name || '(no name)', 'id', device.id);
+      const services = await server.getPrimaryServices();
+      chars = [];
+      for (const s of services) {
+        log('SERVICE', s.uuid);
+        let cs = []; try { cs = await s.getCharacteristics(); } catch(e) { log('  (cannot list:', e.message, ')'); }
+        for (const c of cs) {
+          const p = c.properties;
+          const flags = ['read','write','writeWithoutResponse','notify','indicate'].filter(k=>p[k]).join(',');
+          log('  CHAR', c.uuid, `[${flags}]`);
+          if (p.write || p.writeWithoutResponse) chars.push(c);
+          if (p.notify || p.indicate) {
+            try { await c.startNotifications(); c.addEventListener('characteristicvaluechanged', ev => log('←', c.uuid.slice(4,8), hex(ev.target.value))); }
+            catch(e) { log('  notify failed:', e.message); }
+          }
+          if (p.read) { try { const v = await c.readValue(); log('    value', hex(v)); } catch(e) {} }
+        }
+      }
+      const sel = $('charSel'); sel.innerHTML = '';
+      if (!chars.length) {
+        sel.innerHTML = '<option>No writable characteristics visible</option>';
+        setStatus('<b class="bad">Connected, but nothing writable is visible.</b> Its service is probably custom — add the UUID from nRF Connect above and reconnect.');
+      } else {
+        const pref = ['fff3','ffe1','ffd9','ffe9','ff01','ae01'];
+        chars.sort((a,b) => { const ia = pref.indexOf(a.uuid.slice(4,8)), ib = pref.indexOf(b.uuid.slice(4,8)); return (ia<0?99:ia)-(ib<0?99:ib); });
+        chars.forEach((c,i) => { const o = document.createElement('option'); o.value = i; o.textContent = `${c.uuid.slice(4,8)}  (${c.service.uuid.slice(4,8)})  ${c.uuid}`; sel.appendChild(o); });
+        sel.disabled = false; target = chars[0];
+        sel.onchange = () => { target = chars[+sel.value]; log('Target →', target.uuid); };
+        setStatus(`<b class="ok">Connected</b> to ${device.name || 'device'} · ${chars.length} writable characteristic(s).`);
+      }
+      $('btnDisconnect').disabled = false;
+    } catch (e) { setStatus(`<b class="bad">${e.name}:</b> ${e.message}`); log('✗', e.message); }
+  }
+
+  $('btnConnect').onclick = connect;
+  $('btnDisconnect').onclick = () => device && device.gatt.connected && device.gatt.disconnect();
+  $('btnRaw').onclick = () => write(parseHex($('rawHex').value));
+  $('btnRawNR').onclick = () => write(parseHex($('rawHex').value), true);
+  $('btnClear').onclick = () => logEl.textContent = '';
+  $('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(logEl.textContent); log('(log copied)'); } catch(e) { log('Copy failed — long-press the log to select it.'); } };
+
+  renderFamilies(); renderSwatches();
+  if (!navigator.bluetooth) setStatus('<b class="bad">Web Bluetooth not available here.</b> Open this page in Chrome on Android from an https:// address.');
+})();
+</script>
+</body>
+</html>
