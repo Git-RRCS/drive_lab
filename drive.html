@@ -43,7 +43,7 @@
   .g.hot .v { color:var(--warn); }
 
   /* lights */
-  .lights { margin-top:auto; display:flex; flex-direction:column; gap:8px; }
+  .lights { display:flex; flex-direction:column; gap:8px; }
   .presets { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
   .presets button { padding:18px 4px; font-size:16px; font-weight:600; border-radius:16px; }
   .swatches { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; }
@@ -55,6 +55,18 @@
   .motor { display:grid; grid-template-columns:1.3fr repeat(4,1fr); gap:6px; }
   .motor button { padding:12px 0; font-weight:600; }
 
+  .tab { display:none; flex:1; flex-direction:column; gap:10px; min-height:0; }
+  .tab.active { display:flex; }
+  #tabGauges .hero { flex:1; display:flex; flex-direction:column; justify-content:center; }
+  #tabGauges .hero .val { font-size:min(36vw,190px); }
+  #tabGauges .g { padding:16px 6px; }
+  #tabLights .presets button { padding:26px 4px; font-size:18px; }
+  #tabLights .swatches { grid-template-columns:repeat(4,1fr); gap:8px; }
+  #tabLights .swatches button { height:64px; }
+  #tabLights .motor button { padding:18px 0; font-size:17px; }
+  .tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .tabs button { padding:14px; font-size:16px; font-weight:700; }
+  .tabs button.cur { background:var(--acc); border-color:var(--acc); color:#04121f; }
   .toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#222b35; color:var(--text); padding:10px 14px; border-radius:12px; font-size:14px; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90vw; }
   .toast.show { opacity:1; }
   .foot { display:flex; justify-content:space-between; font-size:12px; color:var(--dim); }
@@ -70,6 +82,7 @@
   <button id="btnConnect">Connect</button>
 </div>
 
+<section class="tab" id="tabGauges">
 <div class="hero" id="hero">
   <div class="label" id="boostLabel">Boost · psi</div>
   <div class="val" id="boostVal">–</div>
@@ -84,14 +97,19 @@
   <div class="g" id="gIat"><div class="v" id="iat">–</div><div class="l">Intake °F</div></div>
   <div class="g" id="gOil"><div class="v" id="oil">–</div><div class="l">Oil °F</div></div>
 </div>
+</section>
 
+<section class="tab" id="tabLights">
 <div class="lights">
   <div class="presets" id="presets"></div>
   <div class="swatches" id="swatches"></div>
   <div class="ctl"><span class="t">Bright</span><input type="range" id="bright" min="1" max="100"></div>
   <div class="motor" id="motor"></div>
-  <div class="foot"><span id="foot">v8 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
 </div>
+</section>
+
+<div class="tabs"><button id="tbG">Gauges</button><button id="tbL">Lights</button></div>
+<div class="foot"><span id="foot">v9 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
 
 <div class="toast" id="toast"></div>
 
@@ -302,6 +320,14 @@
   let press;
   $('hero').addEventListener('pointerdown', () => { press = setTimeout(() => { showVac = !showVac; store.set('dd_vac', showVac); toast(showVac ? 'Showing vacuum (inHg)' : 'Vacuum hidden'); }, 600); });
   ['pointerup','pointerleave','pointercancel'].forEach(ev => $('hero').addEventListener(ev, () => clearTimeout(press)));
+
+  function showTab(t) {
+    $('tabGauges').classList.toggle('active', t === 'g'); $('tabLights').classList.toggle('active', t === 'l');
+    $('tbG').className = t === 'g' ? 'cur' : ''; $('tbL').className = t === 'l' ? 'cur' : '';
+    store.set('dd_tab', t);
+  }
+  $('tbG').onclick = () => showTab('g'); $('tbL').onclick = () => showTab('l');
+  showTab(store.get('dd_tab', 'g'));
 
   renderLight(); showPeak();
 })();
