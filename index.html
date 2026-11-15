@@ -33,6 +33,10 @@
   .hint { font-size:13px; color:var(--dim); line-height:1.45; }
   .frame { font-family:ui-monospace,monospace; font-size:13px; line-height:1.7; word-spacing:2px; }
   .frame b { color:var(--warn); font-weight:600; }
+  .gauge { background:#0f1318; border:1px solid var(--line); border-radius:12px; padding:10px; text-align:center; }
+  .gauge .v { font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .gauge .l { font-size:12px; color:var(--dim); }
+  .gauge.big { grid-column:span 2; } .gauge.big .v { font-size:52px; }
   details summary { cursor:pointer; color:var(--dim); font-size:14px; }
 </style>
 </head>
@@ -87,6 +91,15 @@
     <input type="range" id="b4" min="0" max="10" value="5">
     <div class="row" style="margin-top:10px"><button id="btnReset">Reset experimental bytes</button></div>
   </details>
+</div>
+
+<div class="card">
+  <h2>OBD test (OBDLink CX)</h2>
+  <div class="hint">Engine running or ignition on. Close OBDeleven and other OBD apps first.</div>
+  <div class="row" style="margin-top:8px"><button class="primary" id="obdConnect">Connect OBD adapter</button></div>
+  <div class="status" id="obdStatus">Not connected.</div>
+  <div class="grid" style="grid-template-columns:repeat(2,1fr);margin-top:12px" id="obdGauges"></div>
+  <div class="row" style="margin-top:10px"><button id="obdStart" disabled>Start live</button><button id="obdStop" disabled>Stop</button></div>
 </div>
 
 <div class="card">
@@ -214,6 +227,99 @@
   $('btnConnect').onclick = connect;
   $('btnClear').onclick = () => logEl.textContent = '';
   $('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(logEl.textContent); log('(copied)'); } catch(e) { log('copy failed — long-press to select'); } };
+
+  // ---------------- OBD (ELM327-compatible over BLE) ----------------
+  const OBD_SERVICES = [0xfff0,0xffe0,0x18f0,0xffb0].map(u16).concat(['e7810a71-73ae-499d-8c15-faa9aef0c3f2','0000ae30-0000-1000-8000-00805f9b34fb']);
+  let obdW = null, obdBuf = '', obdWaiter = null, obdLive = false, baroKpa = null, peakPsi = 0;
+  const KPA_TO_PSI = 0.145038;
+  const G = [['boost','Boost (psi)',true],['peak','Peak boost'],['rpm','RPM'],['coolant','Coolant °F'],['iat','Intake air °F'],['baro','Baro (psi)']];
+  for (const [id,label,big] of G) {
+    const d = document.createElement('div'); d.className = 'gauge' + (big ? ' big' : '');
+    d.innerHTML = `<div class="v" id="g_${id}">–</div><div class="l">${label}</div>`; $('obdGauges').appendChild(d);
+  }
+  const setG = (id, v) => $('g_'+id).textContent = v;
+
+  function obdCmd(cmd, timeout=2500) {
+    return new Promise(async (resolve, reject) => {
+      obdBuf = '';
+      const t = setTimeout(() => { obdWaiter = null; reject(new Error('timeout: '+cmd)); }, timeout);
+      obdWaiter = txt => { clearTimeout(t); obdWaiter = null; resolve(txt); };
+      const data = new TextEncoder().encode(cmd + '\r');
+      try {
+        if (obdW.properties.writeWithoutResponse) await obdW.writeValueWithoutResponse(data);
+        else await obdW.writeValueWithResponse(data);
+      } catch(e) { clearTimeout(t); obdWaiter = null; reject(e); }
+    });
+  }
+  function onObdData(e) {
+    obdBuf += new TextDecoder().decode(e.target.value);
+    if (obdBuf.includes('>')) { const txt = obdBuf.replace(/>/g,'').trim(); obdBuf = ''; if (obdWaiter) obdWaiter(txt); }
+  }
+  // Returns data bytes for a mode-01 PID, or null
+  async function pid(p) {
+    const r = await obdCmd('01' + p);
+    const clean = r.replace(/\s+/g,'').toUpperCase();
+    const i = clean.indexOf('41' + p);
+    if (i < 0) { log('OBD', p, '→', r.replace(/\s+/g,' ')); return null; }
+    const hexs = clean.slice(i + 4).match(/../g) || [];
+    return hexs.map(h => parseInt(h,16));
+  }
+
+  async function obdConnect() {
+    if (!navigator.bluetooth) { $('obdStatus').innerHTML = '<b class="bad">Web Bluetooth not available.</b>'; return; }
+    try {
+      $('obdStatus').textContent = 'Pick the OBDLink in the popup…';
+      const d = await navigator.bluetooth.requestDevice({ acceptAllDevices:true, optionalServices:OBD_SERVICES });
+      d.addEventListener('gattserverdisconnected', () => { obdW = null; obdLive = false; $('obdStatus').innerHTML = '<b class="bad">OBD disconnected.</b>'; $('obdStart').disabled = $('obdStop').disabled = true; });
+      const server = await d.gatt.connect();
+      const services = await server.getPrimaryServices();
+      let found = null;
+      for (const sv of services) {
+        let cs = []; try { cs = await sv.getCharacteristics(); } catch(e) {}
+        log('OBD svc', sv.uuid, cs.map(c => c.uuid.slice(4,8) + '[' + ['write','writeWithoutResponse','notify','indicate'].filter(k => c.properties[k]).join(',') + ']').join(' '));
+        const n = cs.find(c => c.properties.notify || c.properties.indicate);
+        const w = cs.find(c => c.properties.write || c.properties.writeWithoutResponse);
+        if (n && w && !found) found = { n, w, sv };
+      }
+      if (!found) { $('obdStatus').innerHTML = '<b class="bad">No serial-style service found.</b> Copy the log and send it to Claude.'; return; }
+      obdW = found.w;
+      await found.n.startNotifications();
+      found.n.addEventListener('characteristicvaluechanged', onObdData);
+      log('OBD using', found.sv.uuid, 'write', found.w.uuid.slice(4,8), 'notify', found.n.uuid.slice(4,8));
+      $('obdStatus').textContent = 'Initializing adapter…';
+      for (const c of ['ATZ','ATE0','ATL0','ATS0','ATH0','ATSP0']) { const r = await obdCmd(c, 5000).catch(e => e.message); log('OBD', c, '→', r); }
+      const id = await obdCmd('ATI').catch(e => e.message); const sti = await obdCmd('STI').catch(() => '');
+      log('OBD id', id, sti);
+      const b = await pid('33').catch(e => { log('OBD', e.message); return null; });
+      if (b) { baroKpa = b[0]; setG('baro', (baroKpa * KPA_TO_PSI).toFixed(1)); }
+      $('obdStatus').innerHTML = `<b class="ok">OBD connected</b> · ${(sti || id).split(/\r|\n/)[0]}${baroKpa ? ' · baro ' + baroKpa + ' kPa' : ''}`;
+      $('obdStart').disabled = false;
+    } catch(e) { $('obdStatus').innerHTML = `<b class="bad">${e.name}:</b> ${e.message}`; log('OBD ✗', e.message); }
+  }
+
+  async function obdLoop() {
+    let n = 0;
+    while (obdLive && obdW) {
+      try {
+        const m = await pid('0B');           // manifold absolute pressure, kPa
+        if (m && baroKpa != null) {
+          const psi = (m[0] - baroKpa) * KPA_TO_PSI;
+          peakPsi = Math.max(peakPsi, psi);
+          setG('boost', psi.toFixed(1)); setG('peak', peakPsi.toFixed(1));
+        }
+        if (n % 2 === 0) { const r = await pid('0C'); if (r) setG('rpm', Math.round((r[0]*256 + r[1]) / 4)); }
+        if (n % 10 === 0) {
+          const c = await pid('05'); if (c) setG('coolant', Math.round((c[0]-40)*9/5+32));
+          const a = await pid('0F'); if (a) setG('iat', Math.round((a[0]-40)*9/5+32));
+        }
+        if (n % 50 === 0) { const b = await pid('33'); if (b) { baroKpa = b[0]; setG('baro', (baroKpa*KPA_TO_PSI).toFixed(1)); } }
+        n++;
+      } catch(e) { log('OBD', e.message); await new Promise(r => setTimeout(r, 300)); }
+    }
+  }
+  $('obdConnect').onclick = obdConnect;
+  $('obdStart').onclick = () => { if (!obdLive) { obdLive = true; peakPsi = 0; $('obdStop').disabled = false; $('obdStart').disabled = true; obdLoop(); } };
+  $('obdStop').onclick = () => { obdLive = false; $('obdStop').disabled = true; $('obdStart').disabled = false; };
 
   render();
 })();
