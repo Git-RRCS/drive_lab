@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#07090b">
+<title>DriveDash</title>
+<style>
+  :root { --bg:#07090b; --card:#11161b; --line:#1f262e; --text:#eef2f6; --dim:#7d8995; --acc:#4ea1ff; --ok:#3ecf8e; --bad:#ff5d5d; --warn:#ffb547; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Roboto,sans-serif; }
+  body { display:flex; flex-direction:column; padding:10px 12px 14px; gap:10px; user-select:none; }
+  button { font:inherit; color:var(--text); background:#18202a; border:1px solid var(--line); border-radius:14px; padding:12px; cursor:pointer; }
+  button:active { transform:scale(.97); }
+  button.on { background:var(--ok); border-color:var(--ok); color:#04140c; font-weight:700; }
+
+  /* status bar */
+  .top { display:flex; align-items:center; gap:8px; }
+  .chip { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--dim); background:var(--card); border:1px solid var(--line); border-radius:999px; padding:6px 10px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--bad); }
+  .dot.ok { background:var(--ok); } .dot.wait { background:var(--warn); }
+  .top .spacer { flex:1; }
+  .top button { padding:8px 14px; font-size:14px; border-radius:999px; }
+  #btnConnect { background:var(--acc); border-color:var(--acc); color:#04121f; font-weight:700; }
+
+  /* boost hero */
+  .hero { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:14px 16px 16px; text-align:center; }
+  .hero .label { font-size:14px; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; }
+  .hero .val { font-size:min(30vw,150px); line-height:1; font-weight:800; font-variant-numeric:tabular-nums; margin:4px 0 8px; }
+  .bar { position:relative; height:16px; background:#0b0f13; border-radius:8px; overflow:hidden; border:1px solid var(--line); }
+  .bar .fill { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg,#2b7cff,#3ecf8e 60%,#ffb547 85%,#ff5d5d); transition:width .05s linear; }
+  .bar .vac { position:absolute; top:0; bottom:0; right:100%; background:#5b6b7a; }
+  .bar .peak { position:absolute; top:-2px; bottom:-2px; width:3px; background:#fff; left:0; display:none; }
+  .scale { display:flex; justify-content:space-between; font-size:11px; color:var(--dim); margin-top:4px; font-variant-numeric:tabular-nums; }
+  .peakline { display:flex; justify-content:center; gap:14px; margin-top:8px; font-size:15px; color:var(--dim); }
+  .peakline b { color:var(--text); font-variant-numeric:tabular-nums; }
+
+  /* secondary gauges */
+  .gauges { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .g { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:10px 6px; text-align:center; }
+  .g .v { font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .g .l { font-size:12px; color:var(--dim); }
+  .g.hot .v { color:var(--warn); }
+
+  /* lights */
+  .lights { margin-top:auto; display:flex; flex-direction:column; gap:8px; }
+  .presets { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .presets button { padding:18px 4px; font-size:16px; font-weight:600; border-radius:16px; }
+  .swatches { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; }
+  .swatches button { height:42px; padding:0; border:2px solid transparent; border-radius:12px; }
+  .swatches button.sel { border-color:#fff; }
+  .ctl { display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:8px 12px; }
+  .ctl .t { font-size:13px; color:var(--dim); }
+  input[type=range] { width:100%; height:34px; accent-color:var(--acc); }
+  .motor { display:grid; grid-template-columns:1.3fr repeat(4,1fr); gap:6px; }
+  .motor button { padding:12px 0; font-weight:600; }
+
+  .toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#222b35; color:var(--text); padding:10px 14px; border-radius:12px; font-size:14px; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90vw; }
+  .toast.show { opacity:1; }
+  .foot { display:flex; justify-content:space-between; font-size:12px; color:var(--dim); }
+  .foot a { color:var(--dim); }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="chip"><span class="dot" id="dotLight"></span>Light</div>
+  <div class="chip"><span class="dot" id="dotObd"></span>OBD</div>
+  <div class="spacer"></div>
+  <button id="btnConnect">Connect</button>
+</div>
+
+<div class="hero" id="hero">
+  <div class="label" id="boostLabel">Boost · psi</div>
+  <div class="val" id="boostVal">–</div>
+  <div class="bar"><div class="vac" id="vacFill"></div><div class="fill" id="boostFill"></div><div class="peak" id="peakMark"></div></div>
+  <div class="scale"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span></div>
+  <div class="peakline"><span>Peak <b id="peakVal">0.0</b></span><span id="hz"></span></div>
+</div>
+
+<div class="gauges">
+  <div class="g"><div class="v" id="rpm">–</div><div class="l">RPM</div></div>
+  <div class="g" id="gCool"><div class="v" id="cool">–</div><div class="l">Coolant °F</div></div>
+  <div class="g" id="gIat"><div class="v" id="iat">–</div><div class="l">Intake °F</div></div>
+</div>
+
+<div class="lights">
+  <div class="presets" id="presets"></div>
+  <div class="swatches" id="swatches"></div>
+  <div class="ctl"><span class="t">Bright</span><input type="range" id="bright" min="1" max="100"></div>
+  <div class="motor" id="motor"></div>
+  <div class="foot"><span id="foot">v7 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const u16 = n => `0000${n.toString(16).padStart(4,'0')}-0000-1000-8000-00805f9b34fb`;
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e) { return d; } },
+                  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} } };
+  let toastT; const toast = m => { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); };
+
+  // ================= LIGHT (YX_LED / MySmartLED) =================
+  // 0 a5 | 1 power | 2-4 effect (keep 01 00 05) | 5 R | 6 G | 7 B | 8 W | 9 bright 1-100
+  // 10-12 keep 00 01 05 | 13 motor on 0/1 | 14 motor speed 1-4 | 15-17 meteor (off) | 18 00 | 19 aa
+  const L_SVC = u16(0xffb0), L_TX = u16(0xffb1);
+  const BASE = [0xa5,0xff,0x01,0x00,0x05, 0,0,255,0, 100, 0x00,0x01,0x05, 0,0, 0,0,0, 0x00,0xaa];
+  let L = store.get('dd_light', null);
+  if (!Array.isArray(L) || L.length !== 20) L = BASE.slice();
+  for (const i of [0,2,3,4,10,11,12,15,16,17,18,19]) L[i] = BASE[i];   // never keep unknown/effect bytes
+
+  let lightChar = null, lightDev = null, pend = null, lt = null;
+  function lightSend() {
+    store.set('dd_light', L); renderLight();
+    pend = Uint8Array.from(L); if (!lt) lightFlush();
+  }
+  async function lightFlush() {
+    if (!pend) { lt = null; return; }
+    const d = pend; pend = null;
+    if (lightChar) { try { await lightChar.writeValueWithoutResponse(d); } catch(e) {} }
+    lt = setTimeout(lightFlush, 80);
+  }
+
+  const PRESETS = [
+    { name:'Night', set:{ rgbw:[0,40,255,0], bright:25, motor:1 } },
+    { name:'Warm',  set:{ rgbw:[255,90,0,0], bright:60, motor:0 } },
+    { name:'Show',  set:{ rgbw:[0,0,0,255],  bright:100, motor:4 } },
+    { name:'Off',   off:true },
+  ];
+  const COLORS = [[255,0,0,0,'#ff2a2a'],[255,90,0,0,'#ff6a00'],[255,200,0,0,'#ffd000'],[0,255,60,0,'#16e05a'],
+                  [0,220,255,0,'#00d7ff'],[0,60,255,0,'#2c5bff'],[160,0,255,0,'#a32bff'],[0,0,0,255,'#ffffff']];
+
+  for (const p of PRESETS) {
+    const b = document.createElement('button'); b.textContent = p.name;
+    b.onclick = () => {
+      if (p.off) { L[1] = 0; }
+      else { L[1] = 0xff; [L[5],L[6],L[7],L[8]] = p.set.rgbw; L[9] = p.set.bright; L[13] = p.set.motor ? 1 : 0; L[14] = p.set.motor || 0; }
+      lightSend();
+    };
+    $('presets').appendChild(b);
+  }
+  COLORS.forEach(([r,g,b,w,css]) => {
+    const el = document.createElement('button'); el.style.background = css; el.dataset.c = [r,g,b,w].join();
+    el.onclick = () => { L[1] = 0xff; L[5]=r; L[6]=g; L[7]=b; L[8]=w; lightSend(); };
+    $('swatches').appendChild(el);
+  });
+  $('bright').addEventListener('input', e => { L[9] = +e.target.value; if (!L[1]) L[1] = 0xff; lightSend(); });
+  const mOff = document.createElement('button'); mOff.textContent = 'Motor'; mOff.onclick = () => { if (L[13]) { L[13]=0; L[14]=0; } else { L[13]=1; L[14]=store.get('dd_motor',2); } lightSend(); };
+  $('motor').appendChild(mOff);
+  for (let sp = 1; sp <= 4; sp++) {
+    const b = document.createElement('button'); b.textContent = sp; b.dataset.sp = sp;
+    b.onclick = () => { L[13]=1; L[14]=sp; store.set('dd_motor', sp); lightSend(); };
+    $('motor').appendChild(b);
+  }
+  function renderLight() {
+    $('bright').value = L[9];
+    const cur = [L[5],L[6],L[7],L[8]].join();
+    [...$('swatches').children].forEach(el => el.classList.toggle('sel', !!L[1] && el.dataset.c === cur));
+    mOff.className = L[13] ? 'on' : '';
+    [...$('motor').querySelectorAll('[data-sp]')].forEach(el => el.className = (L[13] && +el.dataset.sp === L[14]) ? 'on' : '');
+    [...$('presets').children].forEach((el, i) => {
+      const p = PRESETS[i];
+      const match = p.off ? !L[1] : (L[1] && [L[5],L[6],L[7],L[8]].join() === p.set.rgbw.join() && L[9] === p.set.bright && L[13] === (p.set.motor?1:0) && (!p.set.motor || L[14] === p.set.motor));
+      el.className = match ? 'on' : '';
+    });
+  }
+
+  async function connectLight(dev) {
+    lightDev = dev; $('dotLight').className = 'dot wait';
+    if (!dev._dd) { dev._dd = 1; dev.addEventListener('gattserverdisconnected', () => { lightChar = null; $('dotLight').className = 'dot'; retry(() => connectLight(dev), 'light'); }); }
+    const s = await dev.gatt.connect();
+    lightChar = await (await s.getPrimaryService(L_SVC)).getCharacteristic(L_TX);
+    $('dotLight').className = 'dot ok'; lightSend();
+  }
+
+  // ================= OBD (OBDLink CX / ELM327 over BLE) =================
+  const O_SVCS = [0xfff0,0xffe0,0x18f0].map(u16).concat(['e7810a71-73ae-499d-8c15-faa9aef0c3f2']);
+  const KPA_PSI = 0.145038, KPA_INHG = 0.2953;
+  let obdW = null, obdDev = null, buf = '', waiter = null, baro = null, peak = 0, running = false, showVac = store.get('dd_vac', false);
+
+  function cmd(c, timeout = 2500) {
+    return new Promise(async (res, rej) => {
+      buf = ''; const t = setTimeout(() => { waiter = null; rej(new Error('timeout ' + c)); }, timeout);
+      waiter = txt => { clearTimeout(t); waiter = null; res(txt); };
+      try { await obdW.writeValueWithoutResponse(new TextEncoder().encode(c + '\r')); } catch(e) { clearTimeout(t); waiter = null; rej(e); }
+    });
+  }
+  const LEN = { '05':1, '0B':1, '0C':2, '0F':1, '33':1 };
+  function parse(r) {
+    const lines = r.toUpperCase().split(/[\r\n]+/).map(l => l.trim()).filter(Boolean)
+      .filter(l => !/^[0-9A-F]{3}$/.test(l)).map(l => l.replace(/^[0-9A-F]:\s*/, ''));
+    const c = lines.join('').replace(/\s+/g,'').replace(/^.*?(?=41)/, ''); const o = {};
+    if (!c.startsWith('41')) return o;
+    for (let i = 2; i + 2 <= c.length;) { const p = c.substr(i,2), n = LEN[p]; if (n === undefined) break;
+      const h = c.substr(i+2, n*2); if (h.length < n*2) break; o[p] = h.match(/../g).map(x => parseInt(x,16)); i += 2 + n*2; }
+    return o;
+  }
+  const q = async list => parse(await cmd('01' + list.join('') + '1'));
+
+  async function connectObd(dev) {
+    obdDev = dev; $('dotObd').className = 'dot wait';
+    if (!dev._dd) { dev._dd = 1; dev.addEventListener('gattserverdisconnected', () => { obdW = null; running = false; $('dotObd').className = 'dot'; retry(() => connectObd(dev), 'OBD'); }); }
+    const s = await dev.gatt.connect();
+    let n = null, w = null;
+    for (const sv of await s.getPrimaryServices()) {
+      let cs = []; try { cs = await sv.getCharacteristics(); } catch(e) {}
+      const nn = cs.find(c => c.properties.notify), ww = cs.find(c => c.properties.writeWithoutResponse || c.properties.write);
+      if (nn && ww) { n = nn; w = ww; break; }
+    }
+    if (!n) throw new Error('OBD service not found');
+    obdW = w; await n.startNotifications();
+    n.addEventListener('characteristicvaluechanged', e => { buf += new TextDecoder().decode(e.target.value); if (buf.includes('>')) { const t = buf.replace(/>/g,'').trim(); buf = ''; waiter && waiter(t); } });
+    for (const c of ['ATZ','ATE0','ATL0','ATS0','ATH0','ATSP6','ATSH7E0','ATCRA7E8','ATAT2']) await cmd(c, 5000).catch(() => {});
+    const b = await q(['33']).catch(() => ({})); if (b['33']) baro = b['33'][0];
+    $('dotObd').className = 'dot ok';
+    if (!running) { running = true; loop(); }
+  }
+
+  function showBoost(diffKpa) {
+    const psi = diffKpa * KPA_PSI;
+    if (psi < 0 && showVac) { $('boostVal').textContent = (-diffKpa * KPA_INHG).toFixed(1); $('boostLabel').textContent = 'Vacuum · inHg';
+      $('boostFill').style.width = '0%'; $('vacFill').style.width = Math.min(100, -diffKpa / 0.8) + '%'; $('vacFill').style.right = 'auto'; $('vacFill').style.left = '0'; }
+    else { $('boostVal').textContent = Math.max(0, psi).toFixed(1); $('boostLabel').textContent = 'Boost · psi';
+      $('vacFill').style.width = '0%'; $('boostFill').style.width = Math.min(100, Math.max(0, psi) / 25 * 100) + '%'; }
+  }
+  function showPeak() { $('peakVal').textContent = peak.toFixed(1); const m = $('peakMark'); m.style.display = peak > 0.3 ? 'block' : 'none'; m.style.left = Math.min(100, peak / 25 * 100) + '%'; }
+  const F = c => Math.round((c - 40) * 9/5 + 32);
+
+  async function loop() {
+    let n = 0, cnt = 0, t0 = performance.now();
+    while (running && obdW) {
+      try {
+        const o = await q(['0B','0C']);
+        if (n % 15 === 7) Object.assign(o, await q(['05','0F']));
+        if (n % 100 === 50) Object.assign(o, await q(['33']));
+        if (o['33']) baro = o['33'][0];
+        if (o['0B'] && baro != null) { const d = o['0B'][0] - baro; showBoost(d); const psi = d * KPA_PSI; if (psi > peak) { peak = psi; showPeak(); } cnt++; }
+        if (o['0C']) $('rpm').textContent = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4);
+        if (o['05']) { const v = F(o['05'][0]); $('cool').textContent = v; $('gCool').classList.toggle('hot', v >= 230); }
+        if (o['0F']) { const v = F(o['0F'][0]); $('iat').textContent = v; $('gIat').classList.toggle('hot', v >= 130); }
+        n++;
+        const dt = performance.now() - t0; if (dt > 2000) { $('hz').textContent = (cnt * 1000 / dt).toFixed(0) + ' Hz'; cnt = 0; t0 = performance.now(); }
+      } catch(e) { await new Promise(r => setTimeout(r, 250)); }
+    }
+  }
+
+  // ================= connection management =================
+  const retries = {};
+  function retry(fn, name) {
+    clearTimeout(retries[name]);
+    const attempt = async (k = 0) => { try { await fn(); toast(name + ' reconnected'); } catch(e) { retries[name] = setTimeout(() => attempt(k + 1), Math.min(10000, 1500 * (k + 1))); } };
+    retries[name] = setTimeout(attempt, 1000);
+  }
+
+  async function connectAll() {
+    if (!navigator.bluetooth) { toast('Needs Chrome on Android'); return; }
+    // Try devices this page already has permission for (no pickers needed)
+    let known = [];
+    try { if (navigator.bluetooth.getDevices) known = await navigator.bluetooth.getDevices(); } catch(e) {}
+    const lightId = store.get('dd_lightId', null), obdId = store.get('dd_obdId', null);
+    let ld = !lightChar && known.find(d => d.id === lightId);
+    let od = !obdW && known.find(d => d.id === obdId);
+    if (ld) connectLight(ld).catch(() => { ld = null; });
+    if (od) connectObd(od).catch(() => { od = null; });
+    try {
+      if (!lightChar && !ld) {
+        toast('Pick the light (YX_LED)');
+        const d = await navigator.bluetooth.requestDevice({ filters:[{ services:[L_SVC] }, { namePrefix:'YX' }], optionalServices:[L_SVC] });
+        store.set('dd_lightId', d.id); await connectLight(d);
+      }
+    } catch(e) { if (e.name !== 'NotFoundError') toast('Light: ' + e.message); }
+    try {
+      if (!obdW && !od) {
+        toast('Pick the OBD adapter');
+        const d = await navigator.bluetooth.requestDevice({ acceptAllDevices:true, optionalServices:O_SVCS });
+        store.set('dd_obdId', d.id); await connectObd(d);
+      }
+    } catch(e) { if (e.name !== 'NotFoundError') toast('OBD: ' + e.message); }
+    keepAwake();
+  }
+
+  // keep the screen on while driving
+  let wake = null;
+  async function keepAwake() { try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => wake = null); } } catch(e) {} }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (lightChar || obdW)) keepAwake(); });
+
+  $('btnConnect').onclick = connectAll;
+  $('peakVal').parentElement.onclick = () => { peak = 0; showPeak(); toast('Peak reset'); };
+  let press;
+  $('hero').addEventListener('pointerdown', () => { press = setTimeout(() => { showVac = !showVac; store.set('dd_vac', showVac); toast(showVac ? 'Showing vacuum (inHg)' : 'Vacuum hidden'); }, 600); });
+  ['pointerup','pointerleave','pointercancel'].forEach(ev => $('hero').addEventListener(ev, () => clearTimeout(press)));
+
+  renderLight(); showPeak();
+})();
+</script>
+</body>
+</html>
