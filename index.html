@@ -270,7 +270,11 @@
   const PID_LEN = { '05':1, '0B':1, '0C':2, '0F':1, '33':1 };
   // Parse a (possibly multi-PID) mode 01 reply into { pid: [bytes] }
   function parse01(r) {
-    const clean = r.replace(/\s+/g,'').toUpperCase().replace(/^.*?(?=41)/, '');
+    // Long (multi-frame) CAN replies come as: "00C" length line, then "0:...", "1:..." numbered lines
+    const lines = r.toUpperCase().split(/[\r\n]+/).map(l => l.trim()).filter(Boolean)
+      .filter(l => !/^[0-9A-F]{3}$/.test(l))
+      .map(l => l.replace(/^[0-9A-F]:\s*/, ''));
+    const clean = lines.join('').replace(/\s+/g,'').replace(/^.*?(?=41)/, '');
     const out = {};
     if (!clean.startsWith('41')) return out;
     let i = 2;
@@ -284,15 +288,17 @@
     }
     return out;
   }
-  let multiOK = true;
+  let multiOK = true, multiFails = 0;
   // Ask for several PIDs at once; the trailing "1" tells the STN to stop after the first ECU answers (big speedup)
   async function pids(list) {
     if (multiOK) {
       const r = await obdCmd('01' + list.join('') + '1');
       const o = parse01(r);
-      if (list.every(p => o[p])) return o;
-      if (list.length > 1) { multiOK = false; log('OBD multi-PID not answered, falling back:', r.replace(/\s+/g,' ')); }
-      else return o;
+      if (list.every(p => o[p])) { multiFails = 0; return o; }
+      if (list.length === 1) return o;
+      log('OBD multi-PID reply not understood:', JSON.stringify(r));
+      if (++multiFails >= 5) { multiOK = false; log('OBD falling back to single-PID mode'); }
+      return o;
     }
     const o = {};
     for (const p of list) Object.assign(o, parse01(await obdCmd('01' + p + '1')));
