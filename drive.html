@@ -36,9 +36,9 @@
   .peakline b { color:var(--text); font-variant-numeric:tabular-nums; }
 
   /* secondary gauges */
-  .gauges { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .gauges { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
   .g { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:10px 6px; text-align:center; }
-  .g .v { font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .g .v { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
   .g .l { font-size:12px; color:var(--dim); }
   .g.hot .v { color:var(--warn); }
 
@@ -82,6 +82,7 @@
   <div class="g"><div class="v" id="rpm">–</div><div class="l">RPM</div></div>
   <div class="g" id="gCool"><div class="v" id="cool">–</div><div class="l">Coolant °F</div></div>
   <div class="g" id="gIat"><div class="v" id="iat">–</div><div class="l">Intake °F</div></div>
+  <div class="g" id="gOil"><div class="v" id="oil">–</div><div class="l">Oil °F</div></div>
 </div>
 
 <div class="lights">
@@ -89,7 +90,7 @@
   <div class="swatches" id="swatches"></div>
   <div class="ctl"><span class="t">Bright</span><input type="range" id="bright" min="1" max="100"></div>
   <div class="motor" id="motor"></div>
-  <div class="foot"><span id="foot">v7 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
+  <div class="foot"><span id="foot">v8 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -187,7 +188,8 @@
       try { await obdW.writeValueWithoutResponse(new TextEncoder().encode(c + '\r')); } catch(e) { clearTimeout(t); waiter = null; rej(e); }
     });
   }
-  const LEN = { '05':1, '0B':1, '0C':2, '0F':1, '33':1 };
+  const LEN = { '05':1, '0B':1, '0C':2, '0F':1, '33':1, '40':4, '5C':1 };
+  let oilStd = null; // null = unknown, true/false after support check
   function parse(r) {
     const lines = r.toUpperCase().split(/[\r\n]+/).map(l => l.trim()).filter(Boolean)
       .filter(l => !/^[0-9A-F]{3}$/.test(l)).map(l => l.replace(/^[0-9A-F]:\s*/, ''));
@@ -214,6 +216,12 @@
     n.addEventListener('characteristicvaluechanged', e => { buf += new TextDecoder().decode(e.target.value); if (buf.includes('>')) { const t = buf.replace(/>/g,'').trim(); buf = ''; waiter && waiter(t); } });
     for (const c of ['ATZ','ATE0','ATL0','ATS0','ATH0','ATSP6','ATSH7E0','ATCRA7E8','ATAT2']) await cmd(c, 5000).catch(() => {});
     const b = await q(['33']).catch(() => ({})); if (b['33']) baro = b['33'][0];
+    // Does the engine computer offer standard oil temp (PID 5C)? Check the supported-PIDs bitmap for 41-60.
+    const sup = await q(['40']).catch(() => ({}));
+    if (sup['40']) { const bit = 0x5C - 0x41; oilStd = !!(sup['40'][bit >> 3] & (0x80 >> (bit & 7))); }
+    else oilStd = false;
+    store.set('dd_oilStd', oilStd);
+    if (!oilStd) { $('oil').textContent = 'n/a'; }
     $('dotObd').className = 'dot ok';
     if (!running) { running = true; loop(); }
   }
@@ -234,12 +242,14 @@
       try {
         const o = await q(['0B','0C']);
         if (n % 15 === 7) Object.assign(o, await q(['05','0F']));
+        if (oilStd && n % 15 === 11) Object.assign(o, await q(['5C']));
         if (n % 100 === 50) Object.assign(o, await q(['33']));
         if (o['33']) baro = o['33'][0];
         if (o['0B'] && baro != null) { const d = o['0B'][0] - baro; showBoost(d); const psi = d * KPA_PSI; if (psi > peak) { peak = psi; showPeak(); } cnt++; }
         if (o['0C']) $('rpm').textContent = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4);
         if (o['05']) { const v = F(o['05'][0]); $('cool').textContent = v; $('gCool').classList.toggle('hot', v >= 230); }
         if (o['0F']) { const v = F(o['0F'][0]); $('iat').textContent = v; $('gIat').classList.toggle('hot', v >= 130); }
+        if (o['5C']) { const v = F(o['5C'][0]); $('oil').textContent = v; $('gOil').classList.toggle('hot', v >= 260); }
         n++;
         const dt = performance.now() - t0; if (dt > 2000) { $('hz').textContent = (cnt * 1000 / dt).toFixed(0) + ' Hz'; cnt = 0; t0 = performance.now(); }
       } catch(e) { await new Promise(r => setTimeout(r, 250)); }
@@ -287,6 +297,7 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (lightChar || obdW)) keepAwake(); });
 
   $('btnConnect').onclick = connectAll;
+  $('gOil').onclick = () => { if (oilStd === false) toast('Oil temp isn\'t in the standard data on this car — needs the VW-specific lookup'); };
   $('peakVal').parentElement.onclick = () => { peak = 0; showPeak(); toast('Peak reset'); };
   let press;
   $('hero').addEventListener('pointerdown', () => { press = setTimeout(() => { showVac = !showVac; store.set('dd_vac', showVac); toast(showVac ? 'Showing vacuum (inHg)' : 'Vacuum hidden'); }, 600); });
