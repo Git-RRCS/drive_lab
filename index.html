@@ -100,6 +100,8 @@
   <div class="status" id="obdStatus">Not connected.</div>
   <div class="grid" style="grid-template-columns:repeat(2,1fr);margin-top:12px" id="obdGauges"></div>
   <div class="row" style="margin-top:10px"><button id="obdStart" disabled>Start live</button><button id="obdStop" disabled>Stop</button></div>
+  <div class="row" style="margin-top:8px"><button id="vacToggle">Vacuum: hidden</button><button id="peakReset">Reset peak</button></div>
+  <div class="hint" id="obdRate" style="margin-top:8px">Update rate: –</div>
 </div>
 
 <div class="card">
@@ -235,7 +237,7 @@
   const G = [['boost','Boost (psi)',true],['peak','Peak boost'],['rpm','RPM'],['coolant','Coolant °F'],['iat','Intake air °F'],['baro','Baro (psi)']];
   for (const [id,label,big] of G) {
     const d = document.createElement('div'); d.className = 'gauge' + (big ? ' big' : '');
-    d.innerHTML = `<div class="v" id="g_${id}">–</div><div class="l">${label}</div>`; $('obdGauges').appendChild(d);
+    d.innerHTML = `<div class="v" id="g_${id}">–</div><div class="l" id="gl_${id}">${label}</div>`; $('obdGauges').appendChild(d);
   }
   const setG = (id, v) => $('g_'+id).textContent = v;
 
@@ -265,6 +267,49 @@
     return hexs.map(h => parseInt(h,16));
   }
 
+  const PID_LEN = { '05':1, '0B':1, '0C':2, '0F':1, '33':1 };
+  // Parse a (possibly multi-PID) mode 01 reply into { pid: [bytes] }
+  function parse01(r) {
+    const clean = r.replace(/\s+/g,'').toUpperCase().replace(/^.*?(?=41)/, '');
+    const out = {};
+    if (!clean.startsWith('41')) return out;
+    let i = 2;
+    while (i + 2 <= clean.length) {
+      const p = clean.substr(i, 2), n = PID_LEN[p];
+      if (n === undefined) break;
+      const hx = clean.substr(i + 2, n * 2);
+      if (hx.length < n * 2) break;
+      out[p] = hx.match(/../g).map(h => parseInt(h, 16));
+      i += 2 + n * 2;
+    }
+    return out;
+  }
+  let multiOK = true;
+  // Ask for several PIDs at once; the trailing "1" tells the STN to stop after the first ECU answers (big speedup)
+  async function pids(list) {
+    if (multiOK) {
+      const r = await obdCmd('01' + list.join('') + '1');
+      const o = parse01(r);
+      if (list.every(p => o[p])) return o;
+      if (list.length > 1) { multiOK = false; log('OBD multi-PID not answered, falling back:', r.replace(/\s+/g,' ')); }
+      else return o;
+    }
+    const o = {};
+    for (const p of list) Object.assign(o, parse01(await obdCmd('01' + p + '1')));
+    return o;
+  }
+  let showVac = false;
+  try { showVac = localStorage.getItem('showVac') === '1'; } catch(e) {}
+  function showBoost(kpaDiff) {
+    if (kpaDiff >= 0 || !showVac) {
+      setG('boost', Math.max(0, kpaDiff * KPA_TO_PSI).toFixed(1)); $('gl_boost').textContent = 'Boost (psi)';
+    } else {
+      setG('boost', (-kpaDiff * 0.2953).toFixed(1)); $('gl_boost').textContent = 'Vacuum (inHg)';
+    }
+  }
+  function renderVacBtn() { $('vacToggle').textContent = showVac ? 'Vacuum: shown (inHg)' : 'Vacuum: hidden'; $('vacToggle').className = showVac ? 'on' : ''; }
+  renderVacBtn();
+
   async function obdConnect() {
     if (!navigator.bluetooth) { $('obdStatus').innerHTML = '<b class="bad">Web Bluetooth not available.</b>'; return; }
     try {
@@ -287,10 +332,10 @@
       found.n.addEventListener('characteristicvaluechanged', onObdData);
       log('OBD using', found.sv.uuid, 'write', found.w.uuid.slice(4,8), 'notify', found.n.uuid.slice(4,8));
       $('obdStatus').textContent = 'Initializing adapter…';
-      for (const c of ['ATZ','ATE0','ATL0','ATS0','ATH0','ATSP0']) { const r = await obdCmd(c, 5000).catch(e => e.message); log('OBD', c, '→', r); }
+      for (const c of ['ATZ','ATE0','ATL0','ATS0','ATH0','ATSP0','ATAT2']) { const r = await obdCmd(c, 5000).catch(e => e.message); log('OBD', c, '→', r); }
       const id = await obdCmd('ATI').catch(e => e.message); const sti = await obdCmd('STI').catch(() => '');
       log('OBD id', id, sti);
-      const b = await pid('33').catch(e => { log('OBD', e.message); return null; });
+      const bo = await pids(['33']).catch(e => { log('OBD', e.message); return {}; }); const b = bo['33'];
       if (b) { baroKpa = b[0]; setG('baro', (baroKpa * KPA_TO_PSI).toFixed(1)); }
       $('obdStatus').innerHTML = `<b class="ok">OBD connected</b> · ${(sti || id).split(/\r|\n/)[0]}${baroKpa ? ' · baro ' + baroKpa + ' kPa' : ''}`;
       $('obdStart').disabled = false;
@@ -298,26 +343,32 @@
   }
 
   async function obdLoop() {
-    let n = 0;
+    let n = 0, samples = 0, t0 = performance.now();
     while (obdLive && obdW) {
       try {
-        const m = await pid('0B');           // manifold absolute pressure, kPa
-        if (m && baroKpa != null) {
-          const psi = (m[0] - baroKpa) * KPA_TO_PSI;
-          peakPsi = Math.max(peakPsi, psi);
-          setG('boost', psi.toFixed(1)); setG('peak', peakPsi.toFixed(1));
+        const want = ['0B','0C'];
+        if (n % 15 === 0) want.push('05','0F');
+        if (n % 100 === 0) want.push('33');
+        const o = await pids(want);
+        if (o['33']) { baroKpa = o['33'][0]; setG('baro', (baroKpa*KPA_TO_PSI).toFixed(1)); }
+        if (o['0B'] && baroKpa != null) {
+          const diff = o['0B'][0] - baroKpa;
+          peakPsi = Math.max(peakPsi, diff * KPA_TO_PSI);
+          showBoost(diff); setG('peak', peakPsi.toFixed(1));
+          samples++;
         }
-        if (n % 2 === 0) { const r = await pid('0C'); if (r) setG('rpm', Math.round((r[0]*256 + r[1]) / 4)); }
-        if (n % 10 === 0) {
-          const c = await pid('05'); if (c) setG('coolant', Math.round((c[0]-40)*9/5+32));
-          const a = await pid('0F'); if (a) setG('iat', Math.round((a[0]-40)*9/5+32));
-        }
-        if (n % 50 === 0) { const b = await pid('33'); if (b) { baroKpa = b[0]; setG('baro', (baroKpa*KPA_TO_PSI).toFixed(1)); } }
+        if (o['0C']) setG('rpm', Math.round((o['0C'][0]*256 + o['0C'][1]) / 4));
+        if (o['05']) setG('coolant', Math.round((o['05'][0]-40)*9/5+32));
+        if (o['0F']) setG('iat', Math.round((o['0F'][0]-40)*9/5+32));
         n++;
+        const dt = performance.now() - t0;
+        if (dt > 2000) { $('obdRate').textContent = `Update rate: ${(samples*1000/dt).toFixed(1)} boost readings/sec${multiOK ? '' : ' (single-PID mode)'}`; samples = 0; t0 = performance.now(); }
       } catch(e) { log('OBD', e.message); await new Promise(r => setTimeout(r, 300)); }
     }
   }
   $('obdConnect').onclick = obdConnect;
+  $('vacToggle').onclick = () => { showVac = !showVac; try { localStorage.setItem('showVac', showVac ? '1' : '0'); } catch(e) {} renderVacBtn(); };
+  $('peakReset').onclick = () => { peakPsi = 0; setG('peak', '0.0'); };
   $('obdStart').onclick = () => { if (!obdLive) { obdLive = true; peakPsi = 0; $('obdStop').disabled = false; $('obdStart').disabled = true; obdLoop(); } };
   $('obdStop').onclick = () => { obdLive = false; $('obdStop').disabled = true; $('obdStart').disabled = false; };
 
