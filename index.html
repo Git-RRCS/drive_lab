@@ -338,7 +338,7 @@
       found.n.addEventListener('characteristicvaluechanged', onObdData);
       log('OBD using', found.sv.uuid, 'write', found.w.uuid.slice(4,8), 'notify', found.n.uuid.slice(4,8));
       $('obdStatus').textContent = 'Initializing adapter…';
-      for (const c of ['ATZ','ATE0','ATL0','ATS0','ATH0','ATSP0','ATAT2']) { const r = await obdCmd(c, 5000).catch(e => e.message); log('OBD', c, '→', r); }
+      for (const c of ['ATZ','ATE0','ATL0','ATS0','ATH0','ATSP6','ATSH7E0','ATCRA7E8','ATAT2']) { const r = await obdCmd(c, 5000).catch(e => e.message); log('OBD', c, '→', r); }
       const id = await obdCmd('ATI').catch(e => e.message); const sti = await obdCmd('STI').catch(() => '');
       log('OBD id', id, sti);
       const bo = await pids(['33']).catch(e => { log('OBD', e.message); return {}; }); const b = bo['33'];
@@ -352,10 +352,10 @@
     let n = 0, samples = 0, t0 = performance.now();
     while (obdLive && obdW) {
       try {
-        const want = ['0B','0C'];
-        if (n % 15 === 0) want.push('05','0F');
-        if (n % 100 === 0) want.push('33');
-        const o = await pids(want);
+        // Each request stays small enough for a single CAN frame (boost+RPM, or the two temps, or baro)
+        const o = await pids(['0B','0C']);
+        if (n % 15 === 7) Object.assign(o, await pids(['05','0F']));
+        if (n % 100 === 50) Object.assign(o, await pids(['33']));
         if (o['33']) { baroKpa = o['33'][0]; setG('baro', (baroKpa*KPA_TO_PSI).toFixed(1)); }
         if (o['0B'] && baroKpa != null) {
           const diff = o['0B'][0] - baroKpa;
