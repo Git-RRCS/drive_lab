@@ -150,18 +150,13 @@
   body.uno .summon { flex:1 1 0; min-height:118px; margin-top:clamp(4px,1vh,12px); }
   body.uno .summon .sig { max-height:230px; max-width:62%; }
   /* ===== easter egg: full summoning ===== */
-  .egg { position:fixed; inset:0; z-index:60; background:#000; display:none; overflow:hidden; cursor:pointer; }
+  .egg { position:fixed; inset:0; z-index:60; background:rgba(4,2,3,.0); display:none; overflow:hidden; cursor:pointer; transition:background .35s; }
+  .egg.p1 { background:rgba(4,2,3,.55); }
   .egg.show { display:block; }
-  .eggwall { position:absolute; inset:-4%; opacity:0; transition:opacity .25s; }
-  .eggwall svg { width:100%; height:100%; display:block; }
-  .eggwall path { fill:none; stroke:#e8e8e8; stroke-width:1.1; stroke-linecap:round; stroke-linejoin:round; }
-  .eggwall .red path { stroke:#d0141e; }
-  .egg.p1 .eggwall { opacity:.16; } .egg.p3 .eggwall { opacity:.4; }
-  .eggimg { position:absolute; left:50%; top:50%; width:min(100vw, 72vh); transform:translate(-50%,-50%); display:block; image-rendering:auto; mix-blend-mode:screen;
-          -webkit-mask-image:linear-gradient(180deg, transparent 0, #000 14%, #000 86%, transparent 100%); mask-image:linear-gradient(180deg, transparent 0, #000 14%, #000 86%, transparent 100%); }
+  .eggimg { position:absolute; left:50%; top:50%; width:min(100vw, 72vh); transform:translate(-50%,-50%); display:block; image-rendering:auto; }
   .egg.p3 .eggimg { animation:egglitch .7s steps(1) 1; }
   .eggstatic { position:absolute; inset:0; pointer-events:none; opacity:0;
-               background:repeating-linear-gradient(180deg, rgba(255,255,255,.12) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(var(--ro),.10) 0 2px, transparent 2px 5px); }
+               background:repeating-linear-gradient(180deg, rgba(255,255,255,.07) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(var(--ro),.06) 0 2px, transparent 2px 5px); }
   .egg.noise .eggstatic { animation:static .5s steps(4) 1; }
   @keyframes static { 0% { opacity:.9; transform:translateY(0); } 25% { opacity:.3; transform:translateY(-6px); } 50% { opacity:.8; transform:translateY(4px); } 75% { opacity:.2; } 100% { opacity:0; } }
   @keyframes egglitch {
@@ -172,6 +167,8 @@
     60% { transform:translate(-50%,-50%) translate(4px,2px); filter:brightness(2); opacity:1; }
     80% { transform:translate(-50%,-50%) skewX(4deg); filter:none; opacity:.8; }
     100% { transform:translate(-50%,-50%); filter:none; opacity:1; } }
+  body.eggshake .tab.active, body.eggshake .top { animation:egglitchpage .7s steps(1) 1; }
+  @keyframes egglitchpage { 0% { transform:translate(-4px,1px) skewX(-3deg); filter:drop-shadow(3px 0 0 rgba(255,0,90,.6)); } 20% { transform:translate(3px,0); filter:none; } 40% { transform:translate(-2px,-1px) skewX(2deg); filter:drop-shadow(-3px 0 0 rgba(0,240,255,.5)); } 60% { transform:none; } 80% { transform:translate(1px,0); } 100% { transform:none; filter:none; } }
   .egg.out { animation:eggout .45s ease-in forwards; }
   @keyframes eggout { 0% { opacity:1; filter:brightness(2.5); transform:scaleY(1); } 60% { transform:scaleY(.02); filter:brightness(4); opacity:1; } 100% { transform:scaleY(0); opacity:0; } }
   @media (max-height:790px) { .summon { min-height:44px; } .peakline { margin-top:4px; } .tach { height:40px; } .lamps { margin-top:6px; } }
@@ -312,10 +309,10 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v28 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v29 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
-<div class="egg" id="egg"><div class="eggwall" id="eggWall"></div><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""></div>
+<div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -909,36 +906,9 @@
   }
 
   // ================= easter egg: tap the sigil =================
-  const eggGlyphs = [];
-  function buildEgg() {
-    // full-screen rune wall
-    const cols = 14, rows = 30; let g = '';
-    for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) {
-      const ch = VERSE[(c * rows + r) % VERSE.length];
-      g += `<g data-r="${r}"${Math.random() < .22 ? ' class="red"' : ''} transform="translate(${c * 16 + 3},${r * 20 + 3})"><path d="${RUNE[ch]}"/></g>`;
-    }
-    $('eggWall').innerHTML = `<svg viewBox="0 0 ${cols * 16} ${rows * 20}" preserveAspectRatio="xMidYMid slice">${g}</svg>`;
-    $('eggWall').querySelectorAll('g').forEach(el => eggGlyphs.push({ el, d: el.firstChild.getAttribute('d'), x: el.getAttribute('transform') }));
-  }
-  buildEgg();
-  function tearEgg(frames, rowsPer = 6) {
-    let f = 0;
-    const step = () => {
-      eggGlyphs.forEach(o => { o.el.setAttribute('transform', o.x); o.el.firstChild.setAttribute('d', o.d); });
-      if (f++ >= frames) return;
-      const shift = {}; for (let k = 0; k < rowsPer; k++) shift[Math.floor(Math.random() * 30)] = (Math.random() < .5 ? -1 : 1) * (4 + Math.random() * 18);
-      eggGlyphs.forEach(o => {
-        const r = +o.el.dataset.r;
-        if (shift[r]) o.el.setAttribute('transform', o.x.replace(/translate\(([\d.]+)/, (m, x) => `translate(${(+x + shift[r]).toFixed(1)}`));
-        if (Math.random() < .05) o.el.firstChild.setAttribute('d', RUNE[String.fromCharCode(65 + Math.floor(Math.random() * 26))]);
-      });
-      setTimeout(step, 60 + Math.random() * 40);
-    };
-    step();
-  }
   let eggTimers = [], eggOn = false;
   function eggClose() {
-    if (!eggOn) return; eggOn = false; eggTimers.forEach(clearTimeout); eggTimers = [];
+    if (!eggOn) return; eggOn = false; eggTimers.forEach(clearTimeout); eggTimers = []; document.body.classList.remove('eggshake');
     const e = $('egg'); e.classList.add('out');
     setTimeout(() => { e.className = 'egg'; }, 460);
   }
@@ -946,13 +916,12 @@
     if (eggOn) return; eggOn = true;
     const e = $('egg'), at = (ms, fn) => eggTimers.push(setTimeout(fn, ms));
     e.className = 'egg show'; void e.offsetWidth;
-    $('eggImg').src = 'summon.gif?t=' + Date.now();        // restart the boot animation from frame one
-    e.classList.add('noise'); tearEgg(5, 10);
+    $('eggImg').src = 'summon.webp?t=' + Date.now();       // restart the boot animation from frame one
+    e.classList.add('noise');
     at(120, () => e.classList.add('p1'));
     at(500, () => e.classList.remove('noise'));
-    at(1500, () => tearEgg(3, 4));
-    at(3500, () => { e.classList.add('p3', 'noise'); tearEgg(8, 12); lightCue([255, 0, 0], 2, 260, 160); });
-    at(4300, () => e.classList.remove('p3', 'noise'));
+    at(3500, () => { e.classList.add('p3', 'noise'); document.body.classList.add('eggshake'); lightCue([255, 0, 0], 2, 260, 160); });
+    at(4300, () => { e.classList.remove('p3', 'noise'); document.body.classList.remove('eggshake'); });
     at(6000, eggClose);
   }
   $('summon').addEventListener('click', e => { e.stopPropagation(); summonEgg(); });
