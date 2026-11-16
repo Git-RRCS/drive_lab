@@ -128,24 +128,28 @@
   body.uno .peakline .seg .gh { fill:rgb(var(--ro)); }
   body.uno .tabs button.cur { box-shadow:0 0 10px rgba(var(--ac),.3), inset 0 -2px 0 rgb(var(--ac)); }
 
-  .sigil { position:absolute; left:50%; top:50%; width:min(70%,380px); transform:translate(-50%,-52%); pointer-events:none; opacity:.16; }
-  .sigil svg { width:100%; height:auto; display:block; }
-  .sigil .tri, .sigil .sg { fill:none; stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round; }
-  .sigil .tri { stroke:rgb(var(--ro)); } .sigil .sg { stroke:rgb(var(--ac)); }
-  body.night .sigil { opacity:.10; }
-  .hero > *:not(.sigil) { position:relative; }
-  .car { display:none; margin:clamp(8px,2vh,20px) auto 0; width:min(92%,440px); position:relative; }
-  body.uno .car { display:block; }
-  .car svg { width:100%; height:auto; display:block; }
-  .car .body { fill:none; stroke:rgba(var(--ro),.55); stroke-width:1.4; stroke-linejoin:round; transition:stroke .2s; }
-  .car .trim { fill:none; stroke:rgba(var(--ro),.25); stroke-width:1; }
-  .car.warn .body { stroke:var(--warn); } .car.crit .body { stroke:#fff; animation:blink .3s steps(1) infinite; }
-  .car .lamp rect { fill:rgba(var(--ro),.08); stroke:rgba(var(--ro),.35); stroke-width:.8; }
-  .car .lamp text { font:600 7px 'Helvetica Neue',Arial,sans-serif; fill:rgba(var(--ro),.35); letter-spacing:.06em; }
-  .car .lamp.on rect { fill:rgb(var(--ro)); stroke:rgb(var(--ro)); filter:drop-shadow(0 0 4px rgba(var(--ro),.9)); }
-  .car .lamp.on text { fill:#1a0603; }
-  .car .ico { fill:rgba(var(--ro),.18); } .car .ico.on { fill:rgb(var(--ro)); }
+  /* live sigil: strokes light one by one as boost builds; full summon at the top */
+  .summon { width:clamp(110px, 38vw, 210px); margin:clamp(8px,2vh,22px) auto 0; }
+  .summon svg { width:100%; height:auto; display:block; overflow:visible; }
+  .summon .tri, .summon .st { fill:none; stroke-linecap:round; stroke-linejoin:round; transition:stroke .12s, filter .12s, opacity .12s; }
+  .summon .tri { stroke:rgba(var(--ro),.16); stroke-width:1.6; }
+  .summon .st { stroke:rgba(var(--ac),.16); stroke-width:2.2; }
+  .summon circle.st { fill:none; }
+  .summon .st.lit { stroke:rgb(var(--ac)); filter:drop-shadow(0 0 3px rgba(var(--ac),.9)); }
+  .summon.full .tri { stroke:rgb(var(--ro)); filter:drop-shadow(0 0 5px rgba(var(--ro),.9)); }
+  .summon.full .cap { stroke:rgb(var(--ac)); filter:drop-shadow(0 0 4px rgba(var(--ac),.9)); }
+  .summon.full { animation:summon 1.2s ease-in-out infinite; }
+  @keyframes summon { 50% { filter:brightness(1.35); } }
+  body.night .summon:not(.full) .tri { stroke:rgba(var(--ro),.10); } body.night .summon .st:not(.lit) { stroke:rgba(var(--ac),.10); }
 
+  /* telltale lamp row: unlit labels stay faintly visible, like real lamps */
+  .lamps { display:grid; grid-template-columns:repeat(6,1fr); gap:4px; margin-top:clamp(8px,2vh,20px); }
+  .lamps span { font:600 9px var(--serif); letter-spacing:.08em; text-transform:uppercase; text-align:center; padding:5px 0;
+                border:1px solid rgba(var(--ro),.14); border-radius:3px; color:rgba(var(--ro),.22); background:rgba(var(--ro),.03); }
+  .lamps span.on { color:#0a0505; background:rgb(var(--ro)); border-color:rgb(var(--ro)); box-shadow:0 0 8px rgba(var(--ro),.7); }
+  .lamps span.amber { color:#120a00; background:var(--warn); border-color:var(--warn); box-shadow:0 0 8px rgba(255,176,0,.7); }
+  .lamps span.red { color:#fff; background:#d01616; border-color:#ff4040; box-shadow:0 0 10px rgba(255,40,40,.8); animation:blink .5s steps(1) infinite; }
+  body.uno .lamps span.red { background:#fff; color:#300; border-color:#fff; }
   .vb { display:none; flex-direction:column-reverse; gap:2px; width:9px; height:44px; position:absolute; right:7px; bottom:10px; }
   body.uno .vb { display:flex; }
   body.uno .g .v { width:78%; }
@@ -194,7 +198,6 @@
 
 <section class="tab" id="tabGauges">
 <div class="hero" id="hero">
-  <div class="sigil" aria-hidden="true"><svg viewBox="0 0 100 100"><path class="tri" d="M6,8 L94,8 L50,92 Z"/><path class="sg" d="M66.0,21.0 L50.0,37.0 L34.0,21.0 L50.0,21.0 L50.0,53.0 L66.0,21.0 L34.0,37.0 L34.0,53.0"/><circle class="sg" cx="66.0" cy="21.0" r="3.6"/><path class="sg" d="M28.0,53.0 L40.0,53.0"/></svg></div>
   <div class="lbl" style="display:flex;justify-content:space-between"><span>RPM <b>×1000</b></span><span id="rpmLimitLbl"></span></div>
   <div class="tach" id="tach"></div>
   <div class="tachscale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span></div>
@@ -203,15 +206,13 @@
   <div class="sbar" id="sbar"></div>
   <div class="scale"><span>0</span><span>10</span><span>20</span><span>30</span></div>
   <div class="peakline"><span class="lbl">Peak</span><span class="seg" id="peakVal"></span><span id="hz"></span></div>
-  <div class="car" id="car"><svg viewBox="0 0 200 72">
-    <path class="body" d="M8,54 L8,45 Q9,39 21,37 L57,32 L82,14 Q86,11 93,11 L147,11 Q155,11 161,16 L179,30 L185,33 Q189,36 189,44 L189,54 L171,54 A16,16 0 0 0 139,54 L61,54 A16,16 0 0 0 29,54 Z"/>
-    <path class="trim" d="M63,31 L86,15 L117,15 L117,31 Z M121,15 L145,15 Q150,15 154,18 L166,30 L121,30 Z M118,32 L118,52 M57,40 L182,40"/>
-    <circle class="body" cx="45" cy="54" r="11.5"/><circle class="body" cx="155" cy="54" r="11.5"/>
-    <circle class="trim" cx="45" cy="54" r="5"/><circle class="trim" cx="155" cy="54" r="5"/>
-    <g class="lamp" id="lampA"><rect x="64" y="42" width="35" height="9" rx="1.5"/><text x="81.5" y="48.6" text-anchor="middle" id="lampAt">15 PSI</text></g>
-    <g class="lamp" id="lampB"><rect x="102" y="42" width="35" height="9" rx="1.5"/><text x="119.5" y="48.6" text-anchor="middle" id="lampBt">22 PSI</text></g>
-    <circle class="ico" cx="184" cy="57" r="1.6"/><circle class="ico" cx="179" cy="57" r="1.6"/>
+  <div class="summon" id="summon"><svg viewBox="0 0 100 96">
+    <path class="tri" d="M6,8 L94,8 L50,92 Z"/><line class="st" data-i="0" x1="66" y1="21" x2="50" y2="37"/><line class="st" data-i="1" x1="50" y1="37" x2="34" y2="21"/><line class="st" data-i="2" x1="34" y1="21" x2="50" y2="21"/><line class="st" data-i="3" x1="50" y1="21" x2="50" y2="53"/><line class="st" data-i="4" x1="50" y1="53" x2="66" y2="21"/><line class="st" data-i="5" x1="66" y1="21" x2="34" y2="37"/><line class="st" data-i="6" x1="34" y1="37" x2="34" y2="53"/>
+    <circle class="st cap" cx="66" cy="21" r="3.6"/><line class="st cap" x1="28" y1="53" x2="40" y2="53"/>
   </svg></div>
+  <div class="lamps" id="lamps">
+    <span id="lpA">15 psi</span><span id="lpB">22 psi</span><span id="lpShift">Shift</span><span id="lpHot">Hot</span><span id="lpLight">Light</span><span id="lpObd">OBD</span>
+  </div>
 </div>
 
 <div class="gauges">
@@ -249,7 +250,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v21 · tap peak: reset · hold boost: vacuum</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v22 · tap peak: reset · hold boost: vacuum</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="toast" id="toast"></div>
@@ -460,7 +461,7 @@
           const cb = await readDid('202A').catch(() => null);
           if (cb) { tv['202A'] = tuneDecode('202A', cb); o['0B'] = [Math.round(tv['202A'])]; o._hi = tv['202A']; }
         }
-        if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; boostReact(psi); paintCar(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
+        if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; boostReact(psi); paintLamps(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
         if (o['0C']) { const r = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4); setSeg('rpm', String(Math.round(r / 10) * 10), 4); setVB('gRpm', r); }
         if (o['05']) { const v = F(o['05'][0]); setSeg('cool', String(v), 3); temps.cool = v; setVB('gCool', v); }
         if (o['0F']) { const v = F(o['0F'][0]); setSeg('iat', String(v), 3); temps.iat = v; setVB('gIat', v); }
@@ -625,7 +626,7 @@
       const red = shiftLimit(), amber = red - 500;
       paintShift(rpm, red, amber);
       $('rpmSub').textContent = red < REDLINE ? 'warm-up limit' : '';
-      const isRed = rpm >= red;
+      const isRed = rpm >= red; shiftState = isRed ? 2 : rpm >= amber ? 1 : 0;
       if (isRed && !wasRed && cueShift && now - lastShiftFlash > 3000) { lastShiftFlash = now; lightCue([255,0,0], 1, 250); }
       wasRed = isRed;
     }
@@ -741,7 +742,7 @@
   async function keepAwake() { try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => wake = null); } } catch(e) {} }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (lightChar || obdW)) keepAwake(); });
 
-  function syncConnect() { $('btnConnect').classList.toggle('hidden', !!(lightChar && obdW)); }
+  function syncConnect() { $('btnConnect').classList.toggle('hidden', !!(lightChar && obdW)); $('lpLight').className = lightChar ? 'on' : ''; $('lpObd').className = obdW ? 'on' : ''; }
   setInterval(syncConnect, 1000);
   document.querySelectorAll('.chip').forEach(c => c.onclick = () => $('btnConnect').click());
   $('btnConnect').onclick = () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch(e) {} connectAll(); };
@@ -772,11 +773,24 @@
     if (vbLast[gid] === n) return; vbLast[gid] = n;
     [...document.querySelector(`[data-vb="${gid}"]`).children].forEach((e, i) => e.classList.toggle('lit', i < n));
   }
-  let LAMP_A = 15, LAMP_B = 22;
-  function paintCar(psi) {
-    $('lampA').classList.toggle('on', psi >= LAMP_A); $('lampB').classList.toggle('on', psi >= LAMP_B);
+  let LAMP_A = 15, LAMP_B = 22, shiftState = 0;   // shiftState: 0 none, 1 amber zone, 2 at limit
+  const SUMMON_FROM = 2, SUMMON_FULL = 22;            // psi: first stroke ... whole sigil
+  let summonLit = 0, summonT = 0;
+  function paintLamps(psi) {
+    const on = (id, cls) => { $(id).className = cls || ''; };
+    on('lpA', psi >= LAMP_A ? 'on' : ''); on('lpB', psi >= LAMP_B ? 'on' : '');
+    on('lpShift', shiftState === 2 ? 'red' : shiftState === 1 ? 'amber' : '');
     let worst = 0; for (const k in st8) worst = Math.max(worst, st8[k].level);
-    $('car').className = 'car' + (worst === 2 ? ' crit' : worst === 1 ? ' warn' : '');
+    on('lpHot', worst === 2 ? 'red' : worst === 1 ? 'amber' : '');
+    on('lpLight', lightChar ? 'on' : ''); on('lpObd', obdW ? 'on' : '');
+    // sigil: strokes rise instantly with boost, fall back one at a time (so it doesn't flicker)
+    const want = psi < SUMMON_FROM ? 0 : Math.min(7, 1 + Math.floor((psi - SUMMON_FROM) / ((SUMMON_FULL - SUMMON_FROM) / 6)));
+    const now = Date.now();
+    if (want > summonLit) { summonLit = want; summonT = now; }
+    else if (want < summonLit && now - summonT > 110) { summonLit--; summonT = now; }
+    document.querySelectorAll('#summon line.st[data-i]').forEach(el => el.classList.toggle('lit', +el.dataset.i < summonLit));
+    $('summon').classList.toggle('full', summonLit >= 7);
+    document.querySelectorAll('#summon .cap').forEach(el => el.classList.toggle('lit', summonLit >= 7));
   }
   const THEMES = ['outrun', 'uno'];
   let theme = store.get('dd_theme', 'outrun');
