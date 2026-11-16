@@ -3,33 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="theme-color" content="#07090b">
+<meta name="theme-color" content="#0a0708">
 <title>DriveDash</title>
 <style>
-  :root { --bg:#07090b; --card:#11161b; --line:#1f262e; --text:#eef2f6; --dim:#7d8995; --acc:#4ea1ff; --ok:#3ecf8e; --bad:#ff5d5d; --warn:#ffb547; }
+  :root { --bg:#0a0708; --card:#140f10; --line:#2a1d1f; --text:#efe9e7; --dim:#8f8280; --acc:#7a2228; --acc2:#a1323b; --ok:#3ecf8e; --bad:#ff3b3b; --warn:#ffb547; --serif:Georgia,'Noto Serif','Times New Roman',serif; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Roboto,sans-serif; }
   body { display:flex; flex-direction:column; padding:10px 12px 14px; gap:10px; user-select:none; }
-  button { font:inherit; color:var(--text); background:#18202a; border:1px solid var(--line); border-radius:14px; padding:12px; cursor:pointer; }
+  button { font:inherit; color:var(--text); background:#1b1415; border:1px solid var(--line); border-radius:14px; padding:12px; cursor:pointer; }
   button:active { transform:scale(.97); }
-  button.on { background:var(--ok); border-color:var(--ok); color:#04140c; font-weight:700; }
+  button.on { background:var(--acc2); border-color:var(--acc2); color:#fff; font-weight:700; }
 
   /* status bar */
   .top { display:flex; align-items:center; gap:8px; }
-  .chip { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--dim); background:var(--card); border:1px solid var(--line); border-radius:999px; padding:6px 10px; }
+  .chip { font-family:var(--serif); display:flex; align-items:center; gap:6px; font-size:13px; color:var(--dim); background:var(--card); border:1px solid var(--line); border-radius:999px; padding:6px 10px; }
   .dot { width:9px; height:9px; border-radius:50%; background:var(--bad); }
   .dot.ok { background:var(--ok); } .dot.wait { background:var(--warn); }
   .top .spacer { flex:1; }
   .top button { padding:8px 14px; font-size:14px; border-radius:999px; }
-  #btnConnect { background:var(--acc); border-color:var(--acc); color:#04121f; font-weight:700; }
+  #btnConnect { background:var(--acc); border-color:var(--acc2); color:#fff; font-weight:600; font-family:var(--serif); }
 
   /* boost hero */
-  .hero { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:14px 16px 16px; text-align:center; }
-  .hero .label { font-size:14px; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; }
+  .hero { background:radial-gradient(ellipse at 50% 0%, #1d1213 0%, var(--card) 70%); border:1px solid var(--line); border-radius:20px; padding:14px 16px 16px; text-align:center; }
+  .hero .label { font-size:15px; color:var(--dim); letter-spacing:.12em; text-transform:uppercase; font-family:var(--serif); }
   .hero .val { font-size:min(30vw,150px); line-height:1; font-weight:800; font-variant-numeric:tabular-nums; margin:4px 0 8px; }
   .bar { position:relative; height:16px; background:#0b0f13; border-radius:8px; overflow:hidden; border:1px solid var(--line); }
-  .bar .fill { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg,#2b7cff,#3ecf8e 60%,#ffb547 85%,#ff5d5d); transition:width .05s linear; }
-  .bar .vac { position:absolute; top:0; bottom:0; right:100%; background:#5b6b7a; }
+  .bar .fill { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg,#4a3a3c,#7a2228 55%,#ffb547 86%,#ff3b3b); transition:width .05s linear; }
+  .bar .vac { position:absolute; top:0; bottom:0; right:100%; background:#4a3f40; }
   .bar .peak { position:absolute; top:-2px; bottom:-2px; width:3px; background:#fff; left:0; display:none; }
   .scale { display:flex; justify-content:space-between; font-size:11px; color:var(--dim); margin-top:4px; font-variant-numeric:tabular-nums; }
   .peakline { display:flex; justify-content:center; gap:14px; margin-top:8px; font-size:15px; color:var(--dim); }
@@ -39,7 +39,7 @@
   .gauges { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
   .g { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:10px 6px; text-align:center; }
   .g .v { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
-  .g .l { font-size:12px; color:var(--dim); }
+  .g .l { font-size:12px; color:var(--dim); font-family:var(--serif); }
   .g.hot .v { color:var(--warn); }
 
   /* lights */
@@ -50,8 +50,8 @@
   .swatches button { height:42px; padding:0; border:2px solid transparent; border-radius:12px; }
   .swatches button.sel { border-color:#fff; }
   .ctl { display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:8px 12px; }
-  .ctl .t { font-size:13px; color:var(--dim); }
-  input[type=range] { width:100%; height:34px; accent-color:var(--acc); }
+  .ctl .t { font-size:13px; color:var(--dim); font-family:var(--serif); }
+  input[type=range] { width:100%; height:34px; accent-color:var(--acc2); }
   .motor { display:grid; grid-template-columns:1.3fr repeat(4,1fr); gap:6px; }
   .motor button { padding:12px 0; font-weight:600; }
 
@@ -65,8 +65,22 @@
   #tabLights .swatches button { height:64px; }
   #tabLights .motor button { padding:18px 0; font-size:17px; }
   .tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .tabs button { padding:14px; font-size:16px; font-weight:700; }
-  .tabs button.cur { background:var(--acc); border-color:var(--acc); color:#04121f; }
+  .tabs button { padding:14px; font-size:16px; font-weight:600; font-family:var(--serif); letter-spacing:.04em; }
+  .tabs button.cur { background:var(--acc); border-color:var(--acc2); color:#fff; }
+  .g.warn { border-color:var(--warn); } .g.warn .v { color:var(--warn); }
+  .g.crit { border-color:var(--bad); } .g.crit .v { color:var(--bad); }
+  .g .sub { font-size:10px; color:var(--dim); min-height:12px; }
+  .shift { height:8px; border-radius:4px; background:transparent; margin:-4px 0 8px; transition:background .05s; }
+  .shift.amber { background:var(--warn); }
+  .shift.red { background:var(--bad); animation:blink .16s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:.15; } }
+  .alarm { position:fixed; inset:0; background:rgba(120,0,0,.92); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:10; text-align:center; padding:20px; }
+  .alarm.show { display:flex; }
+  .alarm .what { font-family:var(--serif); font-size:28px; letter-spacing:.06em; }
+  .alarm .num { font-size:min(32vw,170px); font-weight:800; line-height:1.05; font-variant-numeric:tabular-nums; }
+  .alarm .hint2 { font-size:15px; opacity:.8; margin-top:10px; }
+  .cues { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .cues button { padding:12px 6px; font-size:14px; font-family:var(--serif); }
   .toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#222b35; color:var(--text); padding:10px 14px; border-radius:12px; font-size:14px; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90vw; }
   .toast.show { opacity:1; }
   .foot { display:flex; justify-content:space-between; font-size:12px; color:var(--dim); }
@@ -84,6 +98,7 @@
 
 <section class="tab" id="tabGauges">
 <div class="hero" id="hero">
+  <div class="shift" id="shift"></div>
   <div class="label" id="boostLabel">Boost · psi</div>
   <div class="val" id="boostVal">–</div>
   <div class="bar"><div class="vac" id="vacFill"></div><div class="fill" id="boostFill"></div><div class="peak" id="peakMark"></div></div>
@@ -92,10 +107,10 @@
 </div>
 
 <div class="gauges">
-  <div class="g"><div class="v" id="rpm">–</div><div class="l">RPM</div></div>
-  <div class="g" id="gCool"><div class="v" id="cool">–</div><div class="l">Coolant °F</div></div>
-  <div class="g" id="gIat"><div class="v" id="iat">–</div><div class="l">Intake °F</div></div>
-  <div class="g" id="gOil"><div class="v" id="oil">–</div><div class="l">Oil °F</div></div>
+  <div class="g" id="gRpm"><div class="v" id="rpm">–</div><div class="l">RPM</div><div class="sub" id="rpmSub"></div></div>
+  <div class="g" id="gCool"><div class="v" id="cool">–</div><div class="l">Coolant °F</div><div class="sub" id="coolSub"></div></div>
+  <div class="g" id="gIat"><div class="v" id="iat">–</div><div class="l">Intake °F</div><div class="sub"></div></div>
+  <div class="g" id="gOil"><div class="v" id="oil">–</div><div class="l">Oil °F</div><div class="sub" id="oilSub"></div></div>
 </div>
 </section>
 
@@ -105,12 +120,14 @@
   <div class="swatches" id="swatches"></div>
   <div class="ctl"><span class="t">Bright</span><input type="range" id="bright" min="1" max="100"></div>
   <div class="motor" id="motor"></div>
+  <div class="cues"><button id="cueWarn">Warning flashes</button><button id="cueShift">Shift flash</button></div>
 </div>
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v9 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
+<div class="foot"><span id="foot">v10 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
 
+<div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -148,7 +165,7 @@
     { name:'Show',  set:{ rgbw:[0,0,0,255],  bright:100, motor:4 } },
     { name:'Off',   off:true },
   ];
-  const COLORS = [[255,0,0,0,'#ff2a2a'],[255,90,0,0,'#ff6a00'],[255,200,0,0,'#ffd000'],[0,255,60,0,'#16e05a'],
+  const COLORS = [[255,0,0,0,'#ff2a2a'],[255,90,0,0,'#ff6a00'],[140,6,18,0,'#8c0612'],[0,255,60,0,'#16e05a'],
                   [0,220,255,0,'#00d7ff'],[0,60,255,0,'#2c5bff'],[160,0,255,0,'#a32bff'],[0,0,0,255,'#ffffff']];
 
   for (const p of PRESETS) {
@@ -265,14 +282,110 @@
         if (o['33']) baro = o['33'][0];
         if (o['0B'] && baro != null) { const d = o['0B'][0] - baro; showBoost(d); const psi = d * KPA_PSI; if (psi > peak) { peak = psi; showPeak(); } cnt++; }
         if (o['0C']) $('rpm').textContent = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4);
-        if (o['05']) { const v = F(o['05'][0]); $('cool').textContent = v; $('gCool').classList.toggle('hot', v >= 230); }
-        if (o['0F']) { const v = F(o['0F'][0]); $('iat').textContent = v; $('gIat').classList.toggle('hot', v >= 130); }
-        if (o['5C']) { const v = F(o['5C'][0]); $('oil').textContent = v; $('gOil').classList.toggle('hot', v >= 260); }
+        if (o['05']) { const v = F(o['05'][0]); $('cool').textContent = v; temps.cool = v; }
+        if (o['0F']) { const v = F(o['0F'][0]); $('iat').textContent = v; temps.iat = v; }
+        if (o['5C']) { const v = F(o['5C'][0]); $('oil').textContent = v; temps.oil = v; }
+        evaluate(o['0C'] ? Math.round((o['0C'][0]*256 + o['0C'][1]) / 4) : null);
         n++;
         const dt = performance.now() - t0; if (dt > 2000) { $('hz').textContent = (cnt * 1000 / dt).toFixed(0) + ' Hz'; cnt = 0; t0 = performance.now(); }
       } catch(e) { await new Promise(r => setTimeout(r, 250)); }
     }
   }
+
+
+  // ================= warnings, shift light, light cues =================
+  const temps = { oil:null, cool:null, iat:null };
+  // [caution, critical]; hysteresis 5°F; must persist 2 s before firing
+  const RULES = {
+    oil:  { label:'Oil temp',     tile:'gOil',  warn:250, crit:270 },
+    cool: { label:'Coolant temp', tile:'gCool', warn:230, crit:240 },
+    iat:  { label:'Intake air',   tile:'gIat',  warn:130, crit:null },
+  };
+  const st8 = {}; for (const k in RULES) st8[k] = { level:0, pendLevel:0, since:0, snoozeUntil:0, snoozeVal:0 };
+  let cueWarn = store.get('dd_cueWarn', true), cueShift = store.get('dd_cueShift', false);
+  let audio = null;
+  const beep = () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); const o = audio.createOscillator(), g = audio.createGain();
+    o.frequency.value = 660; o.connect(g); g.connect(audio.destination); g.gain.setValueAtTime(.0001, audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(.35, audio.currentTime + .02); g.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + .45); o.start(); o.stop(audio.currentTime + .5); } catch(e) {} };
+
+  // Briefly flash the fiber light, then restore the user's state. Dimmer at night.
+  let cueBusy = false;
+  async function lightCue(rgb, times, onMs = 220, offMs = 180) {
+    if (!lightChar || cueBusy) return; cueBusy = true;
+    const h = new Date().getHours(), night = h >= 19 || h < 7;
+    const f = L.slice(); f[1] = 0xff; [f[5],f[6],f[7]] = rgb; f[8] = 0; f[9] = night ? 20 : 70; f[13] = 0; f[14] = 0;
+    const off = f.slice(); off[1] = 0;
+    for (let i = 0; i < times; i++) {
+      try { await lightChar.writeValueWithoutResponse(Uint8Array.from(f)); } catch(e) {}
+      await new Promise(r => setTimeout(r, onMs));
+      if (i < times - 1) { try { await lightChar.writeValueWithoutResponse(Uint8Array.from(off)); } catch(e) {} await new Promise(r => setTimeout(r, offMs)); }
+    }
+    try { await lightChar.writeValueWithoutResponse(Uint8Array.from(L)); } catch(e) {}
+    cueBusy = false;
+  }
+
+  let alarmKey = null;
+  function showAlarm(k, v) { alarmKey = k; $('alarmWhat').textContent = RULES[k].label; $('alarmNum').textContent = v + '°F'; $('alarm').classList.add('show'); }
+  $('alarm').onclick = () => { if (alarmKey) { const s = st8[alarmKey]; s.snoozeUntil = Date.now() + 60000; s.snoozeVal = temps[alarmKey]; } $('alarm').classList.remove('show'); alarmKey = null; };
+
+  function levelFor(k, v, cur) {
+    const r = RULES[k], hy = 5;
+    const crit = r.crit != null && v >= (cur >= 2 ? r.crit - hy : r.crit);
+    if (crit) return 2;
+    return v >= (cur >= 1 ? r.warn - hy : r.warn) ? 1 : 0;
+  }
+
+  // Shift point: 6300 when warm; starts at 4000 on cold oil and rises as it warms.
+  const REDLINE = 6300;
+  function shiftLimit() {
+    const o = temps.oil, c = temps.cool;
+    if (o != null) return o >= 180 ? REDLINE : Math.round(4000 + Math.max(0, Math.min(1, (o - 120) / 60)) * (REDLINE - 4000));
+    if (c != null) return c >= 175 ? REDLINE : Math.round(4000 + Math.max(0, Math.min(1, (c - 110) / 65)) * (REDLINE - 4000));
+    return REDLINE;
+  }
+  let lastShiftFlash = 0, wasRed = false;
+
+  function evaluate(rpm) {
+    const now = Date.now();
+    for (const k in RULES) {
+      const v = temps[k], s = st8[k], tile = $(RULES[k].tile);
+      if (v == null) continue;
+      const want = levelFor(k, v, s.level);
+      if (want !== s.pendLevel) { s.pendLevel = want; s.since = now; }
+      const settled = now - s.since >= 2000 || want < s.level;     // rising must persist 2 s; falling clears right away
+      if (settled && want !== s.level) {
+        const rising = want > s.level; s.level = want;
+        if (rising && want === 1 && cueWarn) lightCue([255,140,0], 1, 500);
+        if (rising && want === 2) {
+          const snoozed = now < s.snoozeUntil && v < s.snoozeVal + 5;
+          if (!snoozed) { showAlarm(k, v); beep(); if (cueWarn) lightCue([255,0,0], 3); }
+        }
+      }
+      // re-alarm after snooze if still critical, or sooner if it climbs 5°F
+      if (s.level === 2 && !alarmKey && (now >= s.snoozeUntil || v >= s.snoozeVal + 5) && s.snoozeUntil) { s.snoozeUntil = 0; showAlarm(k, v); beep(); }
+      tile.classList.toggle('warn', s.level === 1); tile.classList.toggle('crit', s.level === 2);
+      if (alarmKey === k) $('alarmNum').textContent = v + '°F';
+    }
+    // oil / coolant warm-up notes
+    const oilCold = temps.oil != null && temps.oil < 170, coolCold = temps.oil == null && temps.cool != null && temps.cool < 160;
+    $('oilSub').textContent = oilCold ? 'warming up' : '';
+    $('coolSub').textContent = coolCold ? 'warming up' : '';
+    // shift light
+    if (rpm != null) {
+      const red = shiftLimit(), amber = red - 500;
+      const sh = $('shift');
+      sh.className = 'shift' + (rpm >= red ? ' red' : rpm >= amber ? ' amber' : '');
+      $('rpmSub').textContent = red < REDLINE ? 'limit ' + Math.round(red / 100) * 100 : '';
+      const isRed = rpm >= red;
+      if (isRed && !wasRed && cueShift && now - lastShiftFlash > 3000) { lastShiftFlash = now; lightCue([255,0,0], 1, 250); }
+      wasRed = isRed;
+    }
+  }
+
+  function renderCues() { $('cueWarn').className = cueWarn ? 'on' : ''; $('cueShift').className = cueShift ? 'on' : ''; }
+  $('cueWarn').onclick = () => { cueWarn = !cueWarn; store.set('dd_cueWarn', cueWarn); renderCues(); toast('Warning flashes ' + (cueWarn ? 'on' : 'off')); };
+  $('cueShift').onclick = () => { cueShift = !cueShift; store.set('dd_cueShift', cueShift); renderCues(); toast('Shift flash ' + (cueShift ? 'on' : 'off')); };
+  renderCues();
 
   // ================= connection management =================
   const retries = {};
@@ -314,7 +427,7 @@
   async function keepAwake() { try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => wake = null); } } catch(e) {} }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (lightChar || obdW)) keepAwake(); });
 
-  $('btnConnect').onclick = connectAll;
+  $('btnConnect').onclick = () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch(e) {} connectAll(); };
   $('gOil').onclick = () => { if (oilStd === false) toast('Oil temp isn\'t in the standard data on this car — needs the VW-specific lookup'); };
   $('peakVal').parentElement.onclick = () => { peak = 0; showPeak(); toast('Peak reset'); };
   let press;
