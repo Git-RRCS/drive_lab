@@ -70,9 +70,11 @@
   .g.warn { border-color:var(--warn); } .g.warn .v { color:var(--warn); }
   .g.crit { border-color:var(--bad); } .g.crit .v { color:var(--bad); }
   .g .sub { font-size:10px; color:var(--dim); min-height:12px; }
-  .shift { height:8px; border-radius:4px; background:transparent; margin:-4px 0 8px; transition:background .05s; }
-  .shift.amber { background:var(--warn); }
-  .shift.red { background:var(--bad); animation:blink .16s steps(1) infinite; }
+  .shift { position:relative; height:10px; border-radius:5px; background:#1e1617; margin:0 0 10px; overflow:hidden; }
+  .shift .sf { position:absolute; left:0; top:0; bottom:0; width:0; background:#5a2a2e; border-radius:5px; }
+  .shift .sa { position:absolute; top:0; bottom:0; width:2px; background:#ffb54788; }
+  .shift.amber .sf { background:var(--warn); }
+  .shift.red .sf { background:var(--bad); width:100% !important; animation:blink .16s steps(1) infinite; }
   @keyframes blink { 50% { opacity:.15; } }
   .alarm { position:fixed; inset:0; background:rgba(120,0,0,.92); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:10; text-align:center; padding:20px; }
   .alarm.show { display:flex; }
@@ -112,7 +114,7 @@
 
 <section class="tab" id="tabGauges">
 <div class="hero" id="hero">
-  <div class="shift" id="shift"></div>
+  <div class="shift" id="shift"><div class="sf" id="shiftFill"></div><div class="sa" id="shiftAmber"></div></div>
   <div class="label" id="boostLabel">Boost · psi</div>
   <div class="val" id="boostVal">–</div>
   <div class="bar"><div class="vac" id="vacFill"></div><div class="fill" id="boostFill"></div><div class="peak" id="peakMark"></div></div>
@@ -155,7 +157,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v14 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
+<div class="foot"><span id="foot">v15 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="toast" id="toast"></div>
@@ -471,15 +473,27 @@
     // shift light
     if (rpm != null) {
       const red = shiftLimit(), amber = red - 500;
-      const sh = $('shift');
-      sh.className = 'shift' + (rpm >= red ? ' red' : rpm >= amber ? ' amber' : '');
-      $('rpmSub').textContent = red < REDLINE ? 'limit ' + Math.round(red / 100) * 100 : '';
+      paintShift(rpm, red, amber);
+      $('rpmSub').textContent = (red < REDLINE ? 'cold · ' : 'shift ') + Math.round(red / 100) * 100;
       const isRed = rpm >= red;
       if (isRed && !wasRed && cueShift && now - lastShiftFlash > 3000) { lastShiftFlash = now; lightCue([255,0,0], 1, 250); }
       wasRed = isRed;
     }
   }
 
+  // Shift strip: fills from 2000 rpm toward the current limit; amber tick marks where it turns amber
+  function paintShift(rpm, red, amber) {
+    const lo = 2000, pct = Math.max(0, Math.min(1, (rpm - lo) / (red - lo))) * 100;
+    $('shift').className = 'shift' + (rpm >= red ? ' red' : rpm >= amber ? ' amber' : '');
+    $('shiftFill').style.width = pct + '%';
+    $('shiftAmber').style.left = ((amber - lo) / (red - lo) * 100) + '%';
+  }
+  // Tap the RPM tile to preview the shift light (sweeps 2000 -> limit -> back)
+  $('gRpm').onclick = async () => {
+    const red = shiftLimit(), amber = red - 500; toast('Shift light test · limit ' + red);
+    for (let r = 2000; r <= red + 200; r += 150) { paintShift(r, red, amber); await new Promise(x => setTimeout(x, 40)); }
+    await new Promise(x => setTimeout(x, 700)); paintShift(900, red, amber);
+  };
   function renderCues() { $('cueWarn').className = cueWarn ? 'on' : ''; $('cueShift').className = cueShift ? 'on' : ''; }
   $('cueWarn').onclick = () => { cueWarn = !cueWarn; store.set('dd_cueWarn', cueWarn); renderCues(); toast('Warning flashes ' + (cueWarn ? 'on' : 'off')); };
   $('cueShift').onclick = () => { cueShift = !cueShift; store.set('dd_cueShift', cueShift); renderCues(); toast('Shift flash ' + (cueShift ? 'on' : 'off')); };
