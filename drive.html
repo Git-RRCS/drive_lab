@@ -64,7 +64,7 @@
   #tabLights .swatches { grid-template-columns:repeat(4,1fr); gap:8px; }
   #tabLights .swatches button { height:64px; }
   #tabLights .motor button { padding:18px 0; font-size:17px; }
-  .tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .tabs { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
   .tabs button { padding:14px; font-size:16px; font-weight:600; font-family:var(--serif); letter-spacing:.04em; }
   .tabs button.cur { background:var(--acc); border-color:var(--acc2); color:#fff; }
   .g.warn { border-color:var(--warn); } .g.warn .v { color:var(--warn); }
@@ -81,6 +81,20 @@
   .alarm .hint2 { font-size:15px; opacity:.8; margin-top:10px; }
   .cues { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .cues button { padding:12px 6px; font-size:14px; font-family:var(--serif); }
+  #tabTune { overflow-y:auto; }
+  .tsec { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:10px 12px; }
+  .tsec h3 { margin:0 0 8px; font:600 13px var(--serif); color:var(--dim); letter-spacing:.1em; text-transform:uppercase; display:flex; justify-content:space-between; }
+  .tsec h3 span { font:400 11px system-ui; letter-spacing:0; text-transform:none; }
+  .pair { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center; }
+  .pair .v { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .pair .l { font-size:11px; color:var(--dim); }
+  .cyl { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; text-align:center; }
+  .cyl > div { background:#0f0b0c; border:1px solid var(--line); border-radius:12px; padding:8px 2px; }
+  .cyl .v { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .cyl .w { font-size:11px; color:var(--dim); font-variant-numeric:tabular-nums; }
+  .cyl > div.warn { border-color:var(--warn); } .cyl > div.warn .w { color:var(--warn); }
+  .cyl > div.crit { border-color:var(--bad); } .cyl > div.crit .w { color:var(--bad); }
+  .na { color:var(--dim) !important; }
   .toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#222b35; color:var(--text); padding:10px 14px; border-radius:12px; font-size:14px; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90vw; }
   .toast.show { opacity:1; }
   .foot { display:flex; justify-content:space-between; font-size:12px; color:var(--dim); }
@@ -125,8 +139,22 @@
 </div>
 </section>
 
-<div class="tabs"><button id="tbG">Gauges</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v12 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
+<section class="tab" id="tabTune">
+  <div class="tsec"><h3>Boost <span>actual · target · difference (psi)</span></h3>
+    <div class="pair"><div><div class="v" id="tBa">–</div><div class="l">Actual</div></div><div><div class="v" id="tBt">–</div><div class="l">Target</div></div><div><div class="v" id="tBd">–</div><div class="l">Diff</div></div></div></div>
+  <div class="tsec"><h3>Timing pulls <span>now · worst this session (°)</span></h3>
+    <div class="cyl" id="tCyl"></div></div>
+  <div class="tsec"><h3>Fuel rail <span>bar · lowest under boost</span></h3>
+    <div class="pair"><div><div class="v" id="tRail">–</div><div class="l">Now</div></div><div><div class="v" id="tRailMin">–</div><div class="l">Min on boost</div></div><div><div class="v" id="tTq">–</div><div class="l">Torque lb·ft</div></div></div></div>
+  <div class="tsec"><h3>Lambda <span>actual · target · leanest on boost</span></h3>
+    <div class="pair"><div><div class="v" id="tLa">–</div><div class="l">Actual</div></div><div><div class="v" id="tLt">–</div><div class="l">Target</div></div><div><div class="v" id="tLd">–</div><div class="l">Max lean</div></div></div></div>
+  <div class="tsec"><h3>Wastegate <span>% · actual · target</span></h3>
+    <div class="pair"><div><div class="v" id="tWa">–</div><div class="l">Actual</div></div><div><div class="v" id="tWt">–</div><div class="l">Target</div></div><div><button id="tReset" style="width:100%;font-size:13px;padding:10px 4px">Reset session</button></div></div></div>
+  <div class="foot" style="justify-content:center"><span id="tNote">VW engine data · boost gauge updates a little slower on this tab</span></div>
+</section>
+
+<div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
+<div class="foot"><span id="foot">v13 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="toast" id="toast"></div>
@@ -281,6 +309,7 @@
         if (n % 15 === 7) Object.assign(o, await q(['05','0F']));
         if (oilStd && n % 15 === 11) Object.assign(o, await q(['5C']));
         if (n % 100 === 50) Object.assign(o, await q(['33']));
+        if (curTab === 't') await tunePoll(3);
         if (o['33']) baro = o['33'][0];
         if (o['0B'] && baro != null) { const d = o['0B'][0] - baro; showBoost(d); const psi = d * KPA_PSI; boostReact(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
         if (o['0C']) $('rpm').textContent = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4);
@@ -294,6 +323,68 @@
     }
   }
 
+
+
+  // ================= tune health (VW mode 22, Simos18 engine computer) =================
+  // From bri3d/MQBSimosLogVariables. All single-frame replies: 62 + DID(2) + data(2)
+  const TDIDS = ['202A','2029','200A','200B','200C','200D','F423','10C0','1456','39A2','39A3','437C'];
+  const tUnsupported = new Set(); let tIdx = 0;
+  const tv = {}; const tWorst = [0,0,0,0]; let railMin = null, leanMax = null;
+  const cylEls = [];
+  for (let i = 0; i < 4; i++) { const d = document.createElement('div'); d.innerHTML = `<div class="v">–</div><div class="w">cyl ${i+1}</div>`; $('tCyl').appendChild(d); cylEls.push(d); }
+  async function readDid(did) {
+    const r = (await cmd('22' + did + '1')).replace(/\s+/g,'').toUpperCase();
+    const i = r.indexOf('62' + did);
+    if (i < 0) { if (/7F22(31|12|11|33)/.test(r)) tUnsupported.add(did); return null; } // out of range / not supported / denied
+    const h = r.substr(i + 6, 4); if (h.length < 4) return null;
+    return [parseInt(h.substr(0,2),16), parseInt(h.substr(2,2),16)];
+  }
+  const s16 = (a, b) => { const v = a * 256 + b; return v >= 32768 ? v - 65536 : v; };
+  function tuneDecode(did, b) {
+    switch (did) {
+      case '202A': case '2029': return (b[0]*256 + b[1]) * 0.1;           // kPa absolute
+      case 'F423': return (b[0]*256 + b[1]) * 10 / 100;                  // bar
+      case '10C0': case '1456': return (b[0]*256 + b[1]) * 0.000977;     // lambda
+      case '200A': case '200B': case '200C': case '200D': return s16(b[0], b[1]) * 0.01; // degrees
+      case '39A2': case '39A3': return (b[0]*256 + b[1]) * 0.01;         // %
+      case '437C': return (b[0]*256 + b[1]) * 0.1 * 0.7376;              // lb-ft
+    }
+  }
+  async function tunePoll(count) {
+    const live = TDIDS.filter(d => !tUnsupported.has(d)); if (!live.length) return;
+    for (let k = 0; k < count; k++) {
+      const did = live[tIdx++ % live.length];
+      const b = await readDid(did).catch(() => null);
+      if (b) tv[did] = tuneDecode(did, b);
+    }
+    renderTune();
+  }
+  const fmt = (v, d = 1) => v == null ? '–' : v.toFixed(d);
+  function renderTune() {
+    const onBoost = tv['202A'] != null && baro != null && (tv['202A'] - baro) * KPA_PSI > 5;
+    const bA = tv['202A'] != null && baro != null ? (tv['202A'] - baro) * KPA_PSI : null;
+    const bT = tv['2029'] != null && baro != null ? (tv['2029'] - baro) * KPA_PSI : null;
+    $('tBa').textContent = fmt(bA); $('tBt').textContent = fmt(bT);
+    $('tBd').textContent = bA != null && bT != null ? ((bA - bT >= 0 ? '+' : '') + (bA - bT).toFixed(1)) : '–';
+    ['200A','200B','200C','200D'].forEach((did, i) => {
+      const v = tv[did]; if (v == null) return;
+      if (v < tWorst[i]) tWorst[i] = v;
+      const el = cylEls[i]; el.querySelector('.v').textContent = v.toFixed(1);
+      el.querySelector('.w').textContent = `cyl ${i+1} · ${tWorst[i].toFixed(1)}`;
+      el.className = tWorst[i] <= -5 ? 'crit' : tWorst[i] <= -3 ? 'warn' : '';
+    });
+    if (tv['F423'] != null) { $('tRail').textContent = fmt(tv['F423'], 0); if (onBoost) railMin = railMin == null ? tv['F423'] : Math.min(railMin, tv['F423']); }
+    $('tRailMin').textContent = fmt(railMin, 0);
+    $('tTq').textContent = fmt(tv['437C'], 0);
+    $('tLa').textContent = fmt(tv['10C0'], 2); $('tLt').textContent = fmt(tv['1456'], 2);
+    if (onBoost && tv['10C0'] != null && tv['1456'] != null) { const d = tv['10C0'] - tv['1456']; leanMax = leanMax == null ? d : Math.max(leanMax, d); }
+    $('tLd').textContent = leanMax == null ? '–' : (leanMax >= 0 ? '+' : '') + leanMax.toFixed(2);
+    $('tLd').style.color = leanMax != null && leanMax > 0.05 ? 'var(--warn)' : '';
+    $('tWa').textContent = fmt(tv['39A2'], 0); $('tWt').textContent = fmt(tv['39A3'], 0);
+    for (const did of tUnsupported) { const map = { '202A':'tBa','2029':'tBt','F423':'tRail','10C0':'tLa','1456':'tLt','39A2':'tWa','39A3':'tWt','437C':'tTq' }; if (map[did]) { $(map[did]).textContent = 'n/a'; $(map[did]).classList.add('na'); } }
+  }
+  $('tReset').onclick = () => { tWorst.fill(0); railMin = null; leanMax = null; renderTune(); toast('Tune session reset'); };
+  let curTab = 'g';
 
   // ================= warnings, shift light, light cues =================
   const temps = { oil:null, cool:null, iat:null };
@@ -488,11 +579,12 @@
   ['pointerup','pointerleave','pointercancel'].forEach(ev => $('hero').addEventListener(ev, () => clearTimeout(press)));
 
   function showTab(t) {
-    $('tabGauges').classList.toggle('active', t === 'g'); $('tabLights').classList.toggle('active', t === 'l');
-    $('tbG').className = t === 'g' ? 'cur' : ''; $('tbL').className = t === 'l' ? 'cur' : '';
+    curTab = t;
+    $('tabGauges').classList.toggle('active', t === 'g'); $('tabTune').classList.toggle('active', t === 't'); $('tabLights').classList.toggle('active', t === 'l');
+    $('tbG').className = t === 'g' ? 'cur' : ''; $('tbT').className = t === 't' ? 'cur' : ''; $('tbL').className = t === 'l' ? 'cur' : '';
     store.set('dd_tab', t);
   }
-  $('tbG').onclick = () => showTab('g'); $('tbL').onclick = () => showTab('l');
+  $('tbG').onclick = () => showTab('g'); $('tbT').onclick = () => showTab('t'); $('tbL').onclick = () => showTab('l');
   showTab(store.get('dd_tab', 'g'));
 
   renderLight(); showPeak();
