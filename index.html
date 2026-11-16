@@ -42,7 +42,7 @@
 </head>
 <body>
 <h1>Bandersnatch · Lab</h1>
-<div class="sub">YX_LED fiber engine · MySmartLED protocol · <b>v39</b> · <a href="drive.html" style="color:#4ea1ff">Open driving screen →</a></div>
+<div class="sub">YX_LED fiber engine · MySmartLED protocol · <b>v40</b> · <a href="drive.html" style="color:#4ea1ff">Open driving screen →</a></div>
 
 <div class="card">
   <button class="primary" id="btnConnect">Connect to YX_LED</button>
@@ -108,6 +108,8 @@
   <h2>Data code scanner</h2>
   <div class="hint">Read-only: it only <i>asks</i> the engine computer for values (UDS 0x22); it never writes or changes anything. Connect the OBD adapter above first. Keep the phone awake and on this page.</div>
 
+  <div class="row" style="margin-top:8px"><button class="primary" id="scConnect">Connect OBD adapter</button></div>
+  <div class="status" id="scConn">Close the Bandersnatch app first: the adapter takes one connection at a time.</div>
   <label>Module</label>
   <div class="row" id="scMods"></div>
   <label>1 · Discover <span id="scDiscStat">–</span></label>
@@ -341,11 +343,15 @@
   function renderVacBtn() { $('vacToggle').textContent = showVac ? 'Vacuum: shown (inHg)' : 'Vacuum: hidden'; $('vacToggle').className = showVac ? 'on' : ''; }
   renderVacBtn();
 
+  let obdShowAll = false;
   async function obdConnect() {
     if (!navigator.bluetooth) { $('obdStatus').innerHTML = '<b class="bad">Web Bluetooth not available.</b>'; return; }
     try {
       $('obdStatus').textContent = 'Pick the OBDLink in the popup…';
-      const d = await navigator.bluetooth.requestDevice({ acceptAllDevices:true, optionalServices:OBD_SERVICES });
+      const OBD_FILTERS = [{ services:[u16(0xfff0)] }, { services:[u16(0x18f0)] }, { services:[u16(0xffe0)] },
+        ...['OBD','OBDLink','OBDII','STN','ELM','Vgate','vLink','IOS-Vlink','Android-Vlink','V-LINK','Viecar','Veepeak','KONNWEI'].map(n => ({ namePrefix:n }))];
+      const d = await navigator.bluetooth.requestDevice(obdShowAll ? { acceptAllDevices:true, optionalServices:OBD_SERVICES } : { filters:OBD_FILTERS, optionalServices:OBD_SERVICES });
+      obdShowAll = false;
       d.addEventListener('gattserverdisconnected', () => { obdW = null; obdLive = false; $('obdStatus').innerHTML = '<b class="bad">OBD disconnected.</b>'; $('obdStart').disabled = $('obdStop').disabled = true; });
       const server = await d.gatt.connect();
       const services = await server.getPrimaryServices();
@@ -418,8 +424,15 @@
   let scRun = false, scMode = '', scDsg = '', scGearPending = null, scOilPending = null, wakeL = null;
   const keepAwake = async () => { try { wakeL = wakeL || await navigator.wakeLock.request('screen'); } catch(e) {} };
 
+  function scMsg(t, bad) { $('scConn').innerHTML = bad ? `<b class="bad">${t}</b>` : t; }
+  $('scConnect').onclick = async () => {
+    scMsg('Pick the OBD adapter…');
+    try { await obdConnect(); } catch(e) {}
+    if (obdW) scMsg('<b class="ok">Adapter connected.</b> Pick a module and start discovery.');
+    else { obdShowAll = true; scMsg('Not connected. Is the Bandersnatch app closed? Tap again to show all devices.', true); }
+  };
   async function scInit() {
-    if (!obdW) throw new Error('Connect the OBD adapter first');
+    if (!obdW) throw new Error('Connect the OBD adapter first (button above)');
     obdLive = false; await new Promise(r => setTimeout(r, 300));
     for (const c of ['ATSP6','ATAT2']) await obdCmd(c, 3000).catch(() => {});
   }
@@ -445,7 +458,7 @@
   }
   $('scDisc').onclick = async () => {
     if (scRun) return;
-    try { await scInit(); } catch(e) { log('scanner:', e.message); return; }
+    try { await scInit(); } catch(e) { scMsg(e.message, true); log('scanner:', e.message); return; }
     const mod = scMod, M = SC.mods[mod]; await scSelect(mod);
     scRun = true; keepAwake(); log('scanner:', MODS[mod].name, 'discovery from', h4(RANGE[M.next] || 0));
     const t0 = performance.now(); let done = 0;
@@ -481,7 +494,7 @@
     const plan = Object.keys(MODS).map(m => [m, Object.keys(SC.mods[m].found)]).filter(([, d]) => d.length);
     const total = plan.reduce((a, [, d]) => a + d.length, 0);
     if (!total) { log('scanner: run discovery first'); return; }
-    try { await scInit(); } catch(e) { log('scanner:', e.message); return; }
+    try { await scInit(); } catch(e) { scMsg(e.message, true); log('scanner:', e.message); return; }
     scRun = true; keepAwake(); log('scanner: watching', total, 'codes on', plan.map(([m]) => MODS[m].name).join(' + '));
     while (scRun) {
       const t0 = performance.now(), v = {};
