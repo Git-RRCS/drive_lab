@@ -2,104 +2,136 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="theme-color" content="#0a0708">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#06050b">
+<meta name="mobile-web-app-capable" content="yes">
 <title>DriveDash</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0a0708; --card:#140f10; --line:#2a1d1f; --text:#efe9e7; --dim:#8f8280; --acc:#7a2228; --acc2:#a1323b; --ok:#3ecf8e; --bad:#ff3b3b; --warn:#ffb547; --serif:Georgia,'Noto Serif','Times New Roman',serif; }
+  /* Outrun / 80s digital cluster. Aqua = readouts, magenta = frames/accents, amber = caution, red = alarm. */
+  :root { --bg:#06050b; --card:#0b0916; --card2:#0e0b1c; --line:#241c3d; --text:#e9e6ff; --dim:#7c74a8;
+          --aqua:#36f2ff; --aquaDim:rgba(54,242,255,.07); --mag:#ff2bd6; --magDim:#5b1a52; --warn:#ffb000; --bad:#ff2a2a;
+          --acc:#ff2bd6; --acc2:#ff2bd6; --ok:#36f2ff;
+          --serif:'Orbitron',ui-sans-serif,system-ui,sans-serif; --glow:drop-shadow(0 0 6px rgba(54,242,255,.55)); }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Roboto,sans-serif; }
-  body { display:flex; flex-direction:column; padding:10px 12px 14px; gap:10px; user-select:none; }
-  button { font:inherit; color:var(--text); background:#1b1415; border:1px solid var(--line); border-radius:14px; padding:12px; cursor:pointer; }
+  body { display:flex; flex-direction:column; padding:10px 12px 14px; gap:10px; user-select:none;
+         padding-top:max(10px, env(safe-area-inset-top)); }
+  body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:20;
+                background:repeating-linear-gradient(180deg, transparent 0 2px, rgba(0,0,0,.22) 2px 3px); opacity:.35; }
+  body.night { filter:brightness(.72) saturate(.9); }
+  body.night { --glow:drop-shadow(0 0 3px rgba(54,242,255,.35)); }
+  button { font:500 15px var(--serif); letter-spacing:.06em; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; cursor:pointer; text-transform:uppercase; }
   button:active { transform:scale(.97); }
-  button.on { background:var(--acc2); border-color:var(--acc2); color:#fff; font-weight:700; }
+  button.on { background:rgba(255,43,214,.16); border-color:var(--mag); color:#fff; box-shadow:0 0 10px rgba(255,43,214,.35), inset 0 0 8px rgba(255,43,214,.2); }
 
-  /* status bar */
+  /* status row */
   .top { display:flex; align-items:center; gap:8px; }
-  .chip { font-family:var(--serif); display:flex; align-items:center; gap:6px; font-size:13px; color:var(--dim); background:var(--card); border:1px solid var(--line); border-radius:999px; padding:6px 10px; }
-  .dot { width:9px; height:9px; border-radius:50%; background:var(--bad); }
-  .dot.ok { background:var(--ok); } .dot.wait { background:var(--warn); }
+  .chip { font:500 11px var(--serif); letter-spacing:.12em; text-transform:uppercase; display:flex; align-items:center; gap:7px; color:var(--dim); background:var(--card); border:1px solid var(--line); border-radius:6px; padding:7px 10px; cursor:pointer; }
+  .dot { width:8px; height:8px; border-radius:1px; background:#3a1020; }
+  .dot.ok { background:var(--aqua); box-shadow:0 0 6px var(--aqua); } .dot.wait { background:var(--warn); }
   .top .spacer { flex:1; }
-  .top button { padding:8px 14px; font-size:14px; border-radius:999px; }
-  #btnConnect { background:var(--acc); border-color:var(--acc2); color:#fff; font-weight:600; font-family:var(--serif); }
+  .top button { padding:8px 14px; font-size:12px; }
+  #btnConnect { border-color:var(--mag); color:#fff; box-shadow:0 0 10px rgba(255,43,214,.3); }
+  #btnConnect.hidden { display:none; }
 
-  /* boost hero */
-  .hero { background:radial-gradient(ellipse at 50% 0%, #1d1213 0%, var(--card) 70%); border:1px solid var(--line); border-radius:20px; padding:14px 16px 16px; text-align:center; }
-  .hero .label { font-size:15px; color:var(--dim); letter-spacing:.12em; text-transform:uppercase; font-family:var(--serif); }
-  .hero .val { font-size:min(30vw,150px); line-height:1; font-weight:800; font-variant-numeric:tabular-nums; margin:4px 0 8px; }
-  .bar { position:relative; height:16px; background:#0b0f13; border-radius:8px; overflow:hidden; border:1px solid var(--line); }
-  .bar .fill { position:absolute; top:0; bottom:0; left:0; width:0; background:linear-gradient(90deg,#4a3a3c,#7a2228 55%,#ffb547 86%,#ff3b3b); transition:width .05s linear; }
-  .bar .vac { position:absolute; top:0; bottom:0; right:100%; background:#4a3f40; }
-  .bar .peak { position:absolute; top:-2px; bottom:-2px; width:3px; background:#fff; left:0; display:none; }
-  .scale { display:flex; justify-content:space-between; font-size:11px; color:var(--dim); margin-top:4px; font-variant-numeric:tabular-nums; }
-  .peakline { display:flex; justify-content:center; gap:14px; margin-top:8px; font-size:15px; color:var(--dim); }
-  .peakline b { color:var(--text); font-variant-numeric:tabular-nums; }
+  /* seven-segment digits */
+  .seg svg { display:block; width:100%; height:auto; overflow:visible; }
+  .seg .gh { fill:var(--aqua); opacity:.07; }
+  .seg .on { fill:currentColor; }
+  .seg { color:var(--aqua); filter:var(--glow); }
 
-  /* secondary gauges */
+  /* hero cluster */
+  .hero { position:relative; background:linear-gradient(180deg,#0c0a1a 0%,#07060f 100%); border:1px solid var(--line); border-radius:14px; padding:14px 16px 14px; text-align:center;
+          box-shadow:inset 0 0 0 1px rgba(255,43,214,.08), inset 0 30px 60px -40px rgba(255,43,214,.25); overflow:hidden; }
+  .hero::before { content:''; position:absolute; left:0; right:0; top:0; height:40%; pointer-events:none;
+                  background:linear-gradient(180deg, rgba(255,255,255,.035), transparent); }
+  .lbl { font:500 11px var(--serif); letter-spacing:.22em; color:var(--dim); text-transform:uppercase; }
+  .lbl b { color:var(--mag); font-weight:500; }
+  .tach { display:flex; align-items:flex-end; gap:2px; height:clamp(46px, 9vh, 84px); margin:8px 0 4px; }
+  .tach i { flex:1; background:rgba(54,242,255,.07); border-radius:1px; }
+  .tach i.z1 { background:rgba(255,176,0,.10); } .tach i.z2 { background:rgba(255,42,42,.14); }
+  .tach i.lit { background:var(--aqua); box-shadow:0 0 6px rgba(54,242,255,.6); }
+  .tach i.lit.z1 { background:var(--warn); box-shadow:0 0 6px rgba(255,176,0,.6); }
+  .tach i.lit.z2 { background:var(--bad); box-shadow:0 0 8px rgba(255,42,42,.8); }
+  .tach.over i.lit { animation:blink .16s steps(1) infinite; }
+  .tachscale { display:flex; justify-content:space-between; font:500 9px var(--serif); color:var(--dim); letter-spacing:.1em; }
+  .val { margin:clamp(10px,3vh,34px) auto 10px; width:min(98%, 560px); }
+  .sbar { display:flex; gap:2px; height:clamp(14px, 2.4vh, 22px); margin:8px 0 4px; }
+  .sbar i { flex:1; background:rgba(54,242,255,.07); border-radius:1px; }
+  .sbar i.hi { background:rgba(255,43,214,.10); }
+  .sbar i.lit { background:var(--aqua); box-shadow:0 0 5px rgba(54,242,255,.6); }
+  .sbar i.lit.hi { background:var(--mag); box-shadow:0 0 6px rgba(255,43,214,.7); }
+  .sbar i.pk { background:#fff; box-shadow:0 0 6px #fff; }
+  .scale { display:flex; justify-content:space-between; font:500 9px var(--serif); color:var(--dim); letter-spacing:.1em; }
+  .peakline { display:flex; justify-content:center; align-items:center; gap:14px; margin-top:clamp(10px,2.5vh,26px); }
+  .peakline .seg { width:clamp(86px, 28vw, 130px); color:var(--mag); filter:drop-shadow(0 0 5px rgba(255,43,214,.55)); }
+  .peakline .seg .gh { fill:var(--mag); }
+  #hz { font:500 10px var(--serif); color:var(--dim); letter-spacing:.12em; }
+
+  /* secondary readouts */
   .gauges { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
-  .g { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:10px 6px; text-align:center; }
-  .g .v { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
-  .g .l { font-size:12px; color:var(--dim); font-family:var(--serif); }
-  .g.hot .v { color:var(--warn); }
+  .g { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 8px 8px; text-align:center; position:relative; }
+  .g .l { font:500 9px var(--serif); color:var(--dim); letter-spacing:.16em; text-transform:uppercase; margin-bottom:6px; }
+  .g .v { width:100%; }
+  .g .sub { font:500 8px var(--serif); color:var(--mag); letter-spacing:.1em; text-transform:uppercase; min-height:11px; margin-top:5px; }
+  .g.warn { border-color:var(--warn); box-shadow:0 0 10px rgba(255,176,0,.25); } .g.warn .v { color:var(--warn); filter:drop-shadow(0 0 6px rgba(255,176,0,.6)); }
+  .g.crit { border-color:var(--bad); box-shadow:0 0 12px rgba(255,42,42,.35); } .g.crit .v { color:var(--bad); filter:drop-shadow(0 0 6px rgba(255,42,42,.7)); }
 
   /* lights */
   .lights { display:flex; flex-direction:column; gap:8px; }
   .presets { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-  .presets button { padding:18px 4px; font-size:16px; font-weight:600; border-radius:16px; }
   .swatches { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; }
-  .swatches button { height:42px; padding:0; border:2px solid transparent; border-radius:12px; }
-  .swatches button.sel { border-color:#fff; }
-  .ctl { display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:8px 12px; }
-  .ctl .t { font-size:13px; color:var(--dim); font-family:var(--serif); }
-  input[type=range] { width:100%; height:34px; accent-color:var(--acc2); }
+  .swatches button { height:42px; padding:0; border:2px solid transparent; border-radius:8px; }
+  .swatches button.sel { border-color:#fff; box-shadow:0 0 10px rgba(255,255,255,.4); }
+  .ctl { display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 12px; }
+  .ctl .t { font:500 10px var(--serif); color:var(--dim); letter-spacing:.12em; text-transform:uppercase; }
+  .ctl .t b { color:var(--aqua); font-weight:500; }
+  input[type=range] { width:100%; height:34px; accent-color:var(--mag); }
   .motor { display:grid; grid-template-columns:1.3fr repeat(4,1fr); gap:6px; }
-  .motor button { padding:12px 0; font-weight:600; }
+  .motor button { padding:12px 0; }
 
   .tab { display:none; flex:1; flex-direction:column; gap:10px; min-height:0; }
   .tab.active { display:flex; }
   #tabGauges .hero { flex:1; display:flex; flex-direction:column; justify-content:center; }
-  #tabGauges .hero .val { font-size:min(36vw,190px); }
-  #tabGauges .g { padding:16px 6px; }
-  #tabLights .presets button { padding:26px 4px; font-size:18px; }
+  #tabLights .presets button { padding:24px 4px; font-size:14px; }
   #tabLights .swatches { grid-template-columns:repeat(4,1fr); gap:8px; }
-  #tabLights .swatches button { height:64px; }
-  #tabLights .motor button { padding:18px 0; font-size:17px; }
+  #tabLights .swatches button { height:60px; }
+  #tabLights .motor button { padding:18px 0; }
   .tabs { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
-  .tabs button { padding:14px; font-size:16px; font-weight:600; font-family:var(--serif); letter-spacing:.04em; }
-  .tabs button.cur { background:var(--acc); border-color:var(--acc2); color:#fff; }
-  .g.warn { border-color:var(--warn); } .g.warn .v { color:var(--warn); }
-  .g.crit { border-color:var(--bad); } .g.crit .v { color:var(--bad); }
-  .g .sub { font-size:10px; color:var(--dim); min-height:12px; }
-  .shift { position:relative; height:10px; border-radius:5px; background:#1e1617; margin:0 0 10px; overflow:hidden; }
-  .shift .sf { position:absolute; left:0; top:0; bottom:0; width:0; background:#5a2a2e; border-radius:5px; }
-  .shift .sa { position:absolute; top:0; bottom:0; width:2px; background:#ffb54788; }
-  .shift.amber .sf { background:var(--warn); }
-  .shift.red .sf { background:var(--bad); width:100% !important; animation:blink .16s steps(1) infinite; }
+  .tabs button { padding:13px; font-size:13px; letter-spacing:.18em; }
+  .tabs button.cur { border-color:var(--mag); color:#fff; background:rgba(255,43,214,.12); box-shadow:0 0 12px rgba(255,43,214,.35), inset 0 -2px 0 var(--mag); }
   @keyframes blink { 50% { opacity:.15; } }
-  .alarm { position:fixed; inset:0; background:rgba(120,0,0,.92); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:10; text-align:center; padding:20px; }
+  .alarm { position:fixed; inset:0; background:rgba(90,0,8,.94); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:30; text-align:center; padding:20px; }
   .alarm.show { display:flex; }
-  .alarm .what { font-family:var(--serif); font-size:28px; letter-spacing:.06em; }
-  .alarm .num { font-size:min(32vw,170px); font-weight:800; line-height:1.05; font-variant-numeric:tabular-nums; }
-  .alarm .hint2 { font-size:15px; opacity:.8; margin-top:10px; }
+  .alarm .what { font:700 22px var(--serif); letter-spacing:.2em; text-transform:uppercase; color:#fff; }
+  .alarm .num { font:700 min(28vw,150px) var(--serif); line-height:1.05; color:#fff; text-shadow:0 0 18px rgba(255,42,42,.9); }
+  .alarm .hint2 { font:500 12px var(--serif); letter-spacing:.14em; text-transform:uppercase; opacity:.8; margin-top:10px; }
   .cues { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .cues button { padding:12px 6px; font-size:14px; font-family:var(--serif); }
+  .cues button { padding:12px 6px; font-size:12px; }
+
+  /* tune */
   #tabTune { overflow-y:auto; }
-  .tsec { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:10px 12px; }
-  .tsec h3 { margin:0 0 8px; font:600 13px var(--serif); color:var(--dim); letter-spacing:.1em; text-transform:uppercase; display:flex; justify-content:space-between; }
-  .tsec h3 span { font:400 11px system-ui; letter-spacing:0; text-transform:none; }
+  .tsec { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .tsec h3 { margin:0 0 8px; font:700 11px var(--serif); color:var(--mag); letter-spacing:.2em; text-transform:uppercase; display:flex; justify-content:space-between; align-items:baseline; }
+  .tsec h3 span { font:500 9px var(--serif); color:var(--dim); letter-spacing:.06em; text-transform:none; }
   .pair { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center; }
-  .pair .v { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
-  .pair .l { font-size:11px; color:var(--dim); }
+  .pair .v, .cyl .v { font:700 24px var(--serif); color:var(--aqua); text-shadow:0 0 8px rgba(54,242,255,.45); font-variant-numeric:tabular-nums; }
+  .pair .l { font:500 9px var(--serif); color:var(--dim); letter-spacing:.12em; text-transform:uppercase; }
   .cyl { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; text-align:center; }
-  .cyl > div { background:#0f0b0c; border:1px solid var(--line); border-radius:12px; padding:8px 2px; }
-  .cyl .v { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
-  .cyl .w { font-size:11px; color:var(--dim); font-variant-numeric:tabular-nums; }
+  .cyl > div { background:#080611; border:1px solid var(--line); border-radius:8px; padding:8px 2px; }
+  .cyl .v { font-size:20px; }
+  .cyl .w { font:500 9px var(--serif); color:var(--dim); letter-spacing:.06em; }
   .cyl > div.warn { border-color:var(--warn); } .cyl > div.warn .w { color:var(--warn); }
   .cyl > div.crit { border-color:var(--bad); } .cyl > div.crit .w { color:var(--bad); }
-  .na { color:var(--dim) !important; }
-  .toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#222b35; color:var(--text); padding:10px 14px; border-radius:12px; font-size:14px; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90vw; }
+  .na { color:var(--dim) !important; text-shadow:none !important; }
+  .toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#140f26; border:1px solid var(--mag); color:var(--text); padding:10px 14px; border-radius:8px; font:500 12px var(--serif); letter-spacing:.08em; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90vw; z-index:40; }
   .toast.show { opacity:1; }
-  .foot { display:flex; justify-content:space-between; font-size:12px; color:var(--dim); }
+  .foot { display:flex; justify-content:space-between; font:500 9px var(--serif); letter-spacing:.1em; color:var(--dim); text-transform:uppercase; }
   .foot a { color:var(--dim); }
 </style>
 </head>
@@ -114,19 +146,21 @@
 
 <section class="tab" id="tabGauges">
 <div class="hero" id="hero">
-  <div class="shift" id="shift"><div class="sf" id="shiftFill"></div><div class="sa" id="shiftAmber"></div></div>
-  <div class="label" id="boostLabel">Boost · psi</div>
-  <div class="val" id="boostVal">–</div>
-  <div class="bar"><div class="vac" id="vacFill"></div><div class="fill" id="boostFill"></div><div class="peak" id="peakMark"></div></div>
-  <div class="scale"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span><span>30</span></div>
-  <div class="peakline"><span>Peak <b id="peakVal">0.0</b></span><span id="hz"></span></div>
+  <div class="lbl" style="display:flex;justify-content:space-between"><span>RPM <b>×1000</b></span><span id="rpmLimitLbl"></span></div>
+  <div class="tach" id="tach"></div>
+  <div class="tachscale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span></div>
+  <div class="val seg" id="boostVal"></div>
+  <div class="lbl" id="boostLabel">Boost <b>psi</b></div>
+  <div class="sbar" id="sbar"></div>
+  <div class="scale"><span>0</span><span>10</span><span>20</span><span>30</span></div>
+  <div class="peakline"><span class="lbl">Peak</span><span class="seg" id="peakVal"></span><span id="hz"></span></div>
 </div>
 
 <div class="gauges">
-  <div class="g" id="gRpm"><div class="v" id="rpm">–</div><div class="l">RPM</div><div class="sub" id="rpmSub"></div></div>
-  <div class="g" id="gCool"><div class="v" id="cool">–</div><div class="l">Coolant °F</div><div class="sub" id="coolSub"></div></div>
-  <div class="g" id="gIat"><div class="v" id="iat">–</div><div class="l">Intake °F</div><div class="sub"></div></div>
-  <div class="g" id="gOil"><div class="v" id="oil">–</div><div class="l">Oil °F</div><div class="sub" id="oilSub"></div></div>
+  <div class="g" id="gRpm"><div class="l">RPM</div><div class="v seg" id="rpm"></div><div class="sub" id="rpmSub"></div></div>
+  <div class="g" id="gCool"><div class="l">Cool °F</div><div class="v seg" id="cool"></div><div class="sub" id="coolSub"></div></div>
+  <div class="g" id="gIat"><div class="l">Intake °F</div><div class="v seg" id="iat"></div><div class="sub"></div></div>
+  <div class="g" id="gOil"><div class="l">Oil °F</div><div class="v seg" id="oil"></div><div class="sub" id="oilSub"></div></div>
 </div>
 </section>
 
@@ -157,7 +191,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v16 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
+<div class="foot"><span id="foot">v18 · tap peak: reset · hold boost: vacuum</span><a href="./">Lab</a></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="toast" id="toast"></div>
@@ -244,6 +278,55 @@
     $('dotLight').className = 'dot ok'; lightSend();
   }
 
+
+  // ================= seven-segment display =================
+  const SW = 50, SH = 90, ST = 9, SG = 1.6, PITCH = 64;
+  const hz = (x1, x2, y) => `${x1},${y} ${x1+ST/2},${y-ST/2} ${x2-ST/2},${y-ST/2} ${x2},${y} ${x2-ST/2},${y+ST/2} ${x1+ST/2},${y+ST/2}`;
+  const vt = (x, y1, y2) => `${x},${y1} ${x+ST/2},${y1+ST/2} ${x+ST/2},${y2-ST/2} ${x},${y2} ${x-ST/2},${y2-ST/2} ${x-ST/2},${y1+ST/2}`;
+  const P = {
+    a: hz(ST/2+SG, SW-ST/2-SG, ST/2), g: hz(ST/2+SG, SW-ST/2-SG, SH/2), d: hz(ST/2+SG, SW-ST/2-SG, SH-ST/2),
+    f: vt(ST/2, ST/2+SG, SH/2-SG), b: vt(SW-ST/2, ST/2+SG, SH/2-SG), e: vt(ST/2, SH/2+SG, SH-ST/2-SG), c: vt(SW-ST/2, SH/2+SG, SH-ST/2-SG) };
+  const MAP = { '0':'abcdef','1':'bc','2':'abged','3':'abgcd','4':'fgbc','5':'afgcd','6':'afgedc','7':'abc','8':'abcdefg','9':'abcfgd',
+                '-':'g',' ':'','E':'adefg','r':'eg','n':'ceg','o':'cdeg','L':'def','H':'bcefg','P':'abefg','C':'adef','F':'aefg','A':'abcefg','d':'bcdeg','U':'bcdef','t':'defg' };
+  function segSVG(text, cells) {
+    const chars = []; // {c, dp}
+    for (const ch of String(text)) { if (ch === '.' && chars.length) chars[chars.length - 1].dp = true; else chars.push({ c: ch, dp: false }); }
+    while (chars.length < cells) chars.unshift({ c: ' ', dp: false });
+    const parts = [];
+    chars.slice(-cells).forEach((ch, i) => {
+      const on = MAP[ch.c] ?? '';
+      let g = `<g transform="translate(${i * PITCH + 6},0) skewX(-7)">`;
+      for (const k of 'abcdefg') g += `<polygon class="${on.includes(k) ? 'on' : 'gh'}" points="${P[k]}"/>`;
+      g += `<circle class="${ch.dp ? 'on' : 'gh'}" cx="${SW + 6}" cy="${SH - ST/2}" r="${ST/2 + .5}"/></g>`;
+      parts.push(g);
+    });
+    return `<svg viewBox="0 -6 ${cells * PITCH + 8} ${SH + 12}">${parts.join('')}</svg>`;
+  }
+  const segCache = new Map();
+  function setSeg(id, text, cells) { if (segCache.get(id) === text) return; segCache.set(id, text); $(id).innerHTML = segSVG(text, cells); }
+
+  // tach: 35 segments of 200 rpm, rising heights; zones follow the live shift point
+  const TACH_N = 35, TACH_MAX = 7000;
+  for (let i = 0; i < TACH_N; i++) { const el = document.createElement('i'); el.style.height = (32 + 68 * i / (TACH_N - 1)) + '%'; $('tach').appendChild(el); }
+  // boost bar: 30 segments of 1 psi; top third tinted magenta
+  for (let i = 0; i < 30; i++) { const el = document.createElement('i'); if (i >= 20) el.className = 'hi'; $('sbar').appendChild(el); }
+  let lastTach = -1, lastZone = '', lastBar = -1, lastPk = -1;
+  function paintTach(rpm, red, amber) {
+    const zone = red + '|' + amber;
+    const segs = $('tach').children;
+    if (zone !== lastZone) { lastZone = zone; for (let i = 0; i < TACH_N; i++) { const r0 = i * TACH_MAX / TACH_N; segs[i].dataset.z = r0 >= red ? 'z2' : r0 >= amber ? 'z1' : ''; } lastTach = -1; }
+    const n = Math.max(0, Math.min(TACH_N, Math.round(rpm / TACH_MAX * TACH_N)));
+    if (n !== lastTach) { lastTach = n; for (let i = 0; i < TACH_N; i++) segs[i].className = (segs[i].dataset.z || '') + (i < n ? ' lit' : ''); }
+    $('tach').classList.toggle('over', rpm >= red);
+  }
+  function paintBar(psi) {
+    const n = Math.max(0, Math.min(30, Math.round(psi))), pk = Math.max(0, Math.min(29, Math.round(peak) - 1));
+    if (n === lastBar && pk === lastPk) return; lastBar = n; lastPk = pk;
+    const segs = $('sbar').children;
+    for (let i = 0; i < 30; i++) segs[i].className = (i >= 20 ? 'hi' : '') + (i < n ? ' lit' : '') + (peak > 0.5 && i === pk && i >= n ? ' pk' : '');
+  }
+  function fmtBoost(v) { return v.toFixed(1); }
+
   // ================= OBD (OBDLink CX / ELM327 over BLE) =================
   const O_SVCS = [0xfff0,0xffe0,0x18f0].map(u16).concat(['e7810a71-73ae-499d-8c15-faa9aef0c3f2']);
   const KPA_PSI = 0.145038, KPA_INHG = 0.2953;
@@ -289,19 +372,19 @@
     if (sup['40']) { const bit = 0x5C - 0x41; oilStd = !!(sup['40'][bit >> 3] & (0x80 >> (bit & 7))); }
     else oilStd = false;
     store.set('dd_oilStd', oilStd);
-    if (!oilStd) { $('oil').textContent = 'n/a'; }
+    if (!oilStd) { setSeg('oil', '---', 3); }
     $('dotObd').className = 'dot ok';
     if (!running) { running = true; loop(); }
   }
 
+  let lastLbl = '';
   function showBoost(diffKpa) {
-    const psi = diffKpa * KPA_PSI;
-    if (psi < 0 && showVac) { $('boostVal').textContent = (-diffKpa * KPA_INHG).toFixed(1); $('boostLabel').textContent = 'Vacuum · inHg';
-      $('boostFill').style.width = '0%'; $('vacFill').style.width = Math.min(100, -diffKpa / 0.8) + '%'; $('vacFill').style.right = 'auto'; $('vacFill').style.left = '0'; }
-    else { $('boostVal').textContent = Math.max(0, psi).toFixed(1); $('boostLabel').textContent = 'Boost · psi';
-      $('vacFill').style.width = '0%'; $('boostFill').style.width = Math.min(100, Math.max(0, psi) / 30 * 100) + '%'; }
+    const psi = diffKpa * KPA_PSI, vac = psi < 0 && showVac;
+    setSeg('boostVal', vac ? (-diffKpa * KPA_INHG).toFixed(1) : Math.max(0, psi).toFixed(1), 3);
+    const lbl = vac ? 'Vacuum <b>inHg</b>' : 'Boost <b>psi</b>'; if (lbl !== lastLbl) { lastLbl = lbl; $('boostLabel').innerHTML = lbl; }
+    paintBar(vac ? 0 : psi);
   }
-  function showPeak() { $('peakVal').textContent = peak.toFixed(1); const m = $('peakMark'); m.style.display = peak > 0.3 ? 'block' : 'none'; m.style.left = Math.min(100, peak / 30 * 100) + '%'; }
+  function showPeak() { setSeg('peakVal', peak.toFixed(1), 3); lastPk = -2; }
   const F = c => Math.round((c - 40) * 9/5 + 32);
 
   async function loop() {
@@ -320,10 +403,10 @@
           if (cb) { tv['202A'] = tuneDecode('202A', cb); o['0B'] = [Math.round(tv['202A'])]; o._hi = tv['202A']; }
         }
         if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; boostReact(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
-        if (o['0C']) $('rpm').textContent = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4);
-        if (o['05']) { const v = F(o['05'][0]); $('cool').textContent = v; temps.cool = v; }
-        if (o['0F']) { const v = F(o['0F'][0]); $('iat').textContent = v; temps.iat = v; }
-        if (o['5C']) { const v = F(o['5C'][0]); $('oil').textContent = v; temps.oil = v; }
+        if (o['0C']) setSeg('rpm', String(Math.round((o['0C'][0]*256 + o['0C'][1]) / 40) * 10), 4);
+        if (o['05']) { const v = F(o['05'][0]); setSeg('cool', String(v), 3); temps.cool = v; }
+        if (o['0F']) { const v = F(o['0F'][0]); setSeg('iat', String(v), 3); temps.iat = v; }
+        if (o['5C']) { const v = F(o['5C'][0]); setSeg('oil', String(v), 3); temps.oil = v; }
         evaluate(o['0C'] ? Math.round((o['0C'][0]*256 + o['0C'][1]) / 4) : null);
         n++;
         const dt = performance.now() - t0; if (dt > 2000) { $('hz').textContent = (cnt * 1000 / dt).toFixed(0) + ' Hz'; cnt = 0; t0 = performance.now(); }
@@ -477,31 +560,25 @@
     }
     // oil / coolant warm-up notes
     const oilCold = temps.oil != null && temps.oil < 170, coolCold = temps.oil == null && temps.cool != null && temps.cool < 160;
-    $('oilSub').textContent = oilCold ? 'warming up' : '';
+    $('oilSub').textContent = oilCold ? 'warming up' : (temps.oil == null && oilStd === false ? 'no data' : '');
     $('coolSub').textContent = coolCold ? 'warming up' : '';
     // shift light
     if (rpm != null) {
       const red = shiftLimit(), amber = red - 500;
       paintShift(rpm, red, amber);
-      $('rpmSub').textContent = (red < REDLINE ? 'cold · ' : 'shift ') + Math.round(red / 100) * 100;
+      $('rpmSub').textContent = red < REDLINE ? 'warm-up limit' : '';
       const isRed = rpm >= red;
       if (isRed && !wasRed && cueShift && now - lastShiftFlash > 3000) { lastShiftFlash = now; lightCue([255,0,0], 1, 250); }
       wasRed = isRed;
     }
   }
 
-  // Shift strip: fills from 2000 rpm toward the current limit; amber tick marks where it turns amber
-  function paintShift(rpm, red, amber) {
-    const lo = 2000, pct = Math.max(0, Math.min(1, (rpm - lo) / (red - lo))) * 100;
-    $('shift').className = 'shift' + (rpm >= red ? ' red' : rpm >= amber ? ' amber' : '');
-    $('shiftFill').style.width = pct + '%';
-    $('shiftAmber').style.left = ((amber - lo) / (red - lo) * 100) + '%';
-  }
+  function paintShift(rpm, red, amber) { paintTach(rpm, red, amber); $('rpmLimitLbl').innerHTML = (red < REDLINE ? 'Cold <b>' : 'Shift <b>') + (Math.round(red / 100) / 10).toFixed(1) + '</b>'; }
   // Tap the RPM tile to preview the shift light (sweeps 2000 -> limit -> back)
   $('gRpm').onclick = async () => {
     const red = shiftLimit(), amber = red - 500; toast('Shift light test · limit ' + red);
     for (let r = 2000; r <= red + 200; r += 150) { paintShift(r, red, amber); await new Promise(x => setTimeout(x, 40)); }
-    await new Promise(x => setTimeout(x, 700)); paintShift(900, red, amber);
+    await new Promise(x => setTimeout(x, 700)); paintShift(900, red, amber); lastTach = -1;
   };
   function renderCues() { $('cueWarn').className = cueWarn ? 'on' : ''; $('cueShift').className = cueShift ? 'on' : ''; }
   $('cueWarn').onclick = () => { cueWarn = !cueWarn; store.set('dd_cueWarn', cueWarn); renderCues(); toast('Warning flashes ' + (cueWarn ? 'on' : 'off')); };
@@ -606,6 +683,9 @@
   async function keepAwake() { try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => wake = null); } } catch(e) {} }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (lightChar || obdW)) keepAwake(); });
 
+  function syncConnect() { $('btnConnect').classList.toggle('hidden', !!(lightChar && obdW)); }
+  setInterval(syncConnect, 1000);
+  document.querySelectorAll('.chip').forEach(c => c.onclick = () => $('btnConnect').click());
   $('btnConnect').onclick = () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch(e) {} connectAll(); };
   $('gOil').onclick = () => { if (oilStd === false) toast('Oil temp isn\'t in the standard data on this car — needs the VW-specific lookup'); };
   $('peakVal').parentElement.onclick = () => { peak = 0; showPeak(); toast('Peak reset'); };
@@ -622,6 +702,11 @@
   $('tbG').onclick = () => showTab('g'); $('tbT').onclick = () => showTab('t'); $('tbL').onclick = () => showTab('l');
   showTab(store.get('dd_tab', 'g'));
 
+  function nightCheck() { const h = new Date().getHours(); document.body.classList.toggle('night', h >= 19 || h < 7); }
+  nightCheck(); setInterval(nightCheck, 60000);
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  setSeg('boostVal', '0.0', 3); setSeg('rpm', '0', 4); setSeg('cool', '', 3); setSeg('iat', '', 3); setSeg('oil', '', 3);
+  paintTach(0, REDLINE, REDLINE - 500); paintBar(0);
   renderLight(); showPeak();
 })();
 </script>
