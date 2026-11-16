@@ -249,6 +249,14 @@
   .cyl .w { font:500 9px var(--serif); color:var(--dim); letter-spacing:.06em; }
   .cyl > div.warn { border-color:var(--warn); } .cyl > div.warn .w { color:var(--warn); }
   .cyl > div.crit { border-color:var(--bad); } .cyl > div.crit .w { color:var(--bad); }
+  .hl { font:500 9px var(--serif); color:var(--dim); letter-spacing:.06em; min-height:11px; margin-top:2px; font-variant-numeric:tabular-nums; }
+  .pulls { display:flex; flex-direction:column; gap:6px; }
+  .pull { border-top:1px solid var(--line); padding-top:6px; }
+  .pull:first-child { border-top:none; padding-top:0; }
+  .pull .p1 { font:600 10px var(--serif); color:var(--text); letter-spacing:.05em; }
+  .pull .p1 b { color:rgb(var(--ro)); font-weight:700; }
+  .pull .p2 { display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:3px; font:500 10px var(--serif); color:var(--dim); font-variant-numeric:tabular-nums; }
+  .pull .p2 i { font-style:normal; color:var(--text); } .pull .p2 .bad { color:var(--warn); }
   .na { color:var(--dim) !important; text-shadow:none !important; }
   .toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#140f26; border:1px solid var(--mag); color:var(--text); padding:10px 14px; border-radius:8px; font:500 12px var(--serif); letter-spacing:.08em; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90vw; z-index:40; }
   .toast.show { opacity:1; }
@@ -315,11 +323,12 @@
     <div class="pair"><div><div class="v" id="tLa">–</div><div class="l">Actual</div></div><div><div class="v" id="tLt">–</div><div class="l">Target</div></div><div><div class="v" id="tLd">–</div><div class="l">Max lean</div></div></div></div>
   <div class="tsec"><h3>Wastegate <span>% · actual · target</span></h3>
     <div class="pair"><div><div class="v" id="tWa">–</div><div class="l">Actual</div></div><div><div class="v" id="tWt">–</div><div class="l">Target</div></div><div><button id="tReset" style="width:100%;font-size:13px;padding:10px 4px">Reset session</button></div></div></div>
-  <div class="foot" style="justify-content:center"><span id="tNote">VW engine data · boost gauge updates a little slower on this tab</span></div>
+  <div class="tsec"><h3>Pulls <span>auto-recorded over 8 psi · newest first</span></h3><div id="tPulls" class="pulls"><div class="hl">No pulls yet</div></div></div>
+  <div class="foot" style="justify-content:center"><span id="tNote">VW engine data · highs/lows kept until reset</span></div>
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v35 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v36 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -525,14 +534,14 @@
         if (oilStd && n % 15 === 11) Object.assign(o, await q(['5C']));
         if (n % 100 === 50) Object.assign(o, await q(['33']));
         if (curTab === 't') await tunePoll(3);
-        else if (n % 3 === 1) await tuneBackground();   // ~1 safety value every 3rd cycle on other tabs
+        else if (pull || n % 3 === 1) await tuneBackground();   // every cycle during a pull, else every 3rd
         if (o['33']) baro = o['33'][0];
         if (o['0B'] && o['0B'][0] >= 250 && !tUnsupported.has('202A')) {
           const cb = await readDid('202A').catch(() => null);
           if (cb) { tv['202A'] = tuneDecode('202A', cb); o['0B'] = [Math.round(tv['202A'])]; o._hi = tv['202A']; }
         }
-        if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; livePsi = psi; livePsiT = Date.now(); boostReact(psi); paintLamps(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
-        if (o['0C']) { const r = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4); setSeg('rpm', String(Math.round(r / 10) * 10), 4); setVB('gRpm', r); }
+        if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; livePsi = psi; livePsiT = Date.now(); pullTick(psi); boostReact(psi); paintLamps(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
+        if (o['0C']) { const r = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4); liveRpm = r; setSeg('rpm', String(Math.round(r / 10) * 10), 4); setVB('gRpm', r); }
         if (o['05']) { const v = F(o['05'][0]); setSeg('cool', String(v), 3); temps.cool = v; setVB('gCool', v); }
         if (o['0F']) { const v = F(o['0F'][0]); setSeg('iat', String(v), 3); temps.iat = v; setVB('gIat', v); }
         if (o['5C']) { const v = F(o['5C'][0]); setSeg('oil', String(v), 3); temps.oil = v; setVB('gOil', v); }
@@ -549,10 +558,17 @@
   // From bri3d/MQBSimosLogVariables. All single-frame replies: 62 + DID(2) + data(2)
   const TDIDS = ['202A','2029','200A','200B','200C','200D','F423','10C0','1456','39A2','39A3','437C'];
   // Background capture on other tabs: just the safety items, so session worsts are recorded during pulls
-  const TBG = ['200A','200B','200C','200D','F423','10C0','1456','202A'];
+  const TBG = ['200A','200B','200C','200D','F423','10C0','1456','202A','2029','437C'];
   const tUnsupported = new Set(); let tIdx = 0, tBgIdx = 0, livePsi = null, livePsiT = 0;
   const tvT = {};   // when each value was read
-  const tv = {}; const tWorst = [0,0,0,0]; let railMin = null, leanMax = null;
+  const tv = {}; let tWorst = [0,0,0,0], railMin = null, leanMax = null, liveRpm = null;
+  // session extremes + pull history, kept across app restarts until Reset session
+  let ext = {}, pulls = [], tuneDirty = false;
+  try { const t = JSON.parse(localStorage.getItem('dd_tune')); if (t) { tWorst = t.tWorst || tWorst; railMin = t.railMin ?? null; leanMax = t.leanMax ?? null; ext = t.ext || {}; pulls = t.pulls || []; } } catch(e) {}
+  const saveTune = () => { tuneDirty = false; try { localStorage.setItem('dd_tune', JSON.stringify({ tWorst, railMin, leanMax, ext, pulls })); } catch(e) {} };
+  setInterval(() => { if (tuneDirty) saveTune(); }, 5000);
+  const hi = (k, v) => { if (v == null || isNaN(v)) return; if (ext[k] == null || v > ext[k]) { ext[k] = v; tuneDirty = true; } };
+  const lo = (k, v) => { if (v == null || isNaN(v)) return; if (ext[k] == null || v < ext[k]) { ext[k] = v; tuneDirty = true; } };
   const cylEls = [];
   for (let i = 0; i < 4; i++) { const d = document.createElement('div'); d.innerHTML = `<div class="v">–</div><div class="w">cyl ${i+1}</div>`; $('tCyl').appendChild(d); cylEls.push(d); }
   async function readDid(did) {
@@ -598,7 +614,7 @@
     const dd = bA != null && bT != null ? Math.round((bA - bT) * 10) / 10 : null; $('tBd').textContent = dd == null ? '–' : (dd > 0 ? '+' : '') + (dd === 0 ? '0.0' : dd.toFixed(1));
     ['200A','200B','200C','200D'].forEach((did, i) => {
       const v = tv[did]; if (v == null) return;
-      if (v < tWorst[i]) tWorst[i] = v;
+      if (v < tWorst[i]) { tWorst[i] = v; tuneDirty = true; }
       const el = cylEls[i]; el.querySelector('.v').textContent = v.toFixed(1);
       el.querySelector('.w').textContent = `cyl ${i+1} · ${tWorst[i].toFixed(1)}`;
       el.className = tWorst[i] <= -5 ? 'crit' : tWorst[i] <= -3 ? 'warn' : '';
@@ -606,16 +622,72 @@
     if (tv['F423'] != null) { $('tRail').textContent = fmt(tv['F423'], 0); if (onBoost && fresh('F423', 400)) railMin = railMin == null ? tv['F423'] : Math.min(railMin, tv['F423']); }
     $('tRailMin').textContent = fmt(railMin, 0);
     $('tTq').textContent = fmt(tv['437C'], 0);
-    $('tLa').textContent = fmt(tv['10C0'], 2); $('tLt').textContent = fmt(tv['1456'], 2);
+    $('tLa').textContent = tv['10C0'] != null && tv['10C0'] >= 1.3 ? 'CUT' : fmt(tv['10C0'], 2); $('tLt').textContent = fmt(tv['1456'], 2);
     // lean check: both lambdas read within the last moment, while on boost, and not a fuel-cut reading (pure air reads very lean)
     if (onBoost && fresh('10C0') && fresh('1456') && tv['10C0'] < 1.3 && tv['1456'] <= 1.05) {
       const d = tv['10C0'] - tv['1456']; leanMax = leanMax == null ? d : Math.max(leanMax, d); }
     $('tLd').textContent = leanMax == null ? '–' : (leanMax >= 0 ? '+' : '') + leanMax.toFixed(2);
     $('tLd').style.color = leanMax != null && leanMax > 0.05 ? 'var(--warn)' : '';
     $('tWa').textContent = fmt(tv['39A2'], 0); $('tWt').textContent = fmt(tv['39A3'], 0);
+    // session highs / lows
+    if (bA != null && fresh('202A')) hi('boostPk', bA);
+    if (bT != null && fresh('2029')) hi('targetPk', bT);
+    if (onBoost && dd != null && fresh('202A') && fresh('2029')) lo('diffLo', dd);
+    if (fresh('F423')) hi('railHi', tv['F423']);
+    if (fresh('437C')) hi('tqPk', tv['437C']);
+    if (onBoost && fresh('10C0') && tv['10C0'] < 1.3) lo('lamLo', tv['10C0']);
+    if (fresh('1456') && onBoost) lo('lamTgtLo', tv['1456']);
+    if (fresh('39A2')) hi('wgHi', tv['39A2']); if (fresh('39A3')) hi('wgTgtHi', tv['39A3']);
+    const H = (id, txt) => { const e = $('h_' + id); if (e) e.textContent = txt; };
+    const f1 = (v, d = 1) => v == null ? '' : v.toFixed(d);
+    H('tBa', ext.boostPk != null ? 'pk ' + f1(ext.boostPk) : ''); H('tBt', ext.targetPk != null ? 'pk ' + f1(ext.targetPk) : '');
+    H('tBd', ext.diffLo != null ? 'lo ' + f1(ext.diffLo) : ''); H('tRail', ext.railHi != null ? 'hi ' + f1(ext.railHi, 0) : '');
+    H('tTq', ext.tqPk != null ? 'pk ' + f1(ext.tqPk, 0) : ''); H('tLa', ext.lamLo != null ? 'lo ' + f1(ext.lamLo, 2) + ' boost' : '');
+    H('tLt', ext.lamTgtLo != null ? 'lo ' + f1(ext.lamTgtLo, 2) : ''); H('tWa', ext.wgHi != null ? 'hi ' + f1(ext.wgHi, 0) : ''); H('tWt', ext.wgTgtHi != null ? 'hi ' + f1(ext.wgTgtHi, 0) : '');
+    tuneDirty = true;
     for (const did of tUnsupported) { const map = { '202A':'tBa','2029':'tBt','F423':'tRail','10C0':'tLa','1456':'tLt','39A2':'tWa','39A3':'tWt','437C':'tTq' }; if (map[did]) { $(map[did]).textContent = 'n/a'; $(map[did]).classList.add('na'); } }
   }
-  $('tReset').onclick = () => { tWorst.fill(0); railMin = null; leanMax = null; renderTune(); toast('Tune session reset'); };
+  ['tBa','tBt','tBd','tRail','tTq','tLa','tLt','tWa','tWt'].forEach(id => { const d = document.createElement('div'); d.className = 'hl'; d.id = 'h_' + id; $(id).parentElement.appendChild(d); });
+
+  // ----- pull recorder: starts over 8 psi, ends 0.5 s after boost drops under 3 psi; keeps pulls longer than 1 s -----
+  let pull = null;
+  function pullTick(psi) {
+    const now = Date.now(), fresh = (did, ms = 500) => tvT[did] && now - tvT[did] < ms;
+    if (!pull && psi > 8) pull = { t0: now, rpm0: liveRpm, rpm1: liveRpm, pk: psi, diffLo: null, rail: null, lean: null, tim: [0,0,0,0], tq: null, iat: null, end: null };
+    if (!pull) return;
+    pull.pk = Math.max(pull.pk, psi); if (liveRpm != null) pull.rpm1 = Math.max(pull.rpm1 || 0, liveRpm);
+    if (psi > 5) {
+      if (fresh('202A') && fresh('2029') && baro != null) { const d = (tv['202A'] - tv['2029']) * KPA_PSI; pull.diffLo = pull.diffLo == null ? d : Math.min(pull.diffLo, d); }
+      if (fresh('F423', 400)) pull.rail = pull.rail == null ? tv['F423'] : Math.min(pull.rail, tv['F423']);
+      if (fresh('10C0') && fresh('1456') && tv['10C0'] < 1.3 && tv['1456'] <= 1.05) { const d = tv['10C0'] - tv['1456']; pull.lean = pull.lean == null ? d : Math.max(pull.lean, d); }
+      ['200A','200B','200C','200D'].forEach((did, i) => { if (fresh(did)) pull.tim[i] = Math.min(pull.tim[i], tv[did]); });
+      if (fresh('437C')) pull.tq = Math.max(pull.tq || 0, tv['437C']);
+      if (temps.iat != null) pull.iat = Math.max(pull.iat || 0, temps.iat);
+    }
+    if (psi < 3) { if (!pull.end) pull.end = now; if (now - pull.end > 500) {
+      const dur = (pull.end - pull.t0) / 1000;
+      if (dur > 1) { pulls.unshift({ at: new Date(pull.t0).toISOString(), dur, pk: pull.pk, rpm0: pull.rpm0, rpm1: pull.rpm1, diffLo: pull.diffLo, rail: pull.rail, lean: pull.lean, tim: pull.tim, tq: pull.tq, iat: pull.iat });
+        pulls = pulls.slice(0, 10); saveTune(); renderPulls(); }
+      pull = null; } }
+    else pull.end = null;
+  }
+  function renderPulls() {
+    if (!pulls.length) { $('tPulls').innerHTML = '<div class="hl">No pulls yet</div>'; return; }
+    const r = v => v == null ? '–' : Math.round(v / 100) * 100;
+    $('tPulls').innerHTML = pulls.map(p => {
+      const t = new Date(p.at), worst = Math.min(...p.tim), wc = p.tim.indexOf(worst) + 1;
+      const bits = [
+        `<span>boost <i>${p.pk.toFixed(1)}</i>${p.diffLo != null ? ` (${p.diffLo >= 0 ? '+' : ''}${p.diffLo.toFixed(1)})` : ''}</span>`,
+        `<span>rail <i>${p.rail != null ? p.rail.toFixed(0) : '–'}</i></span>`,
+        `<span class="${p.lean != null && p.lean > .05 ? 'bad' : ''}">λ <i>${p.lean != null ? (p.lean >= 0 ? '+' : '') + p.lean.toFixed(2) : '–'}</i></span>`,
+        `<span class="${worst <= -3 ? 'bad' : ''}">timing <i>${worst.toFixed(1)}</i>${worst < 0 ? ' c' + wc : ''}</span>`,
+        `<span>tq <i>${p.tq != null ? p.tq.toFixed(0) : '–'}</i></span>`,
+        `<span>iat <i>${p.iat ?? '–'}</i></span>`];
+      return `<div class="pull"><div class="p1">${t.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' })} · ${p.dur.toFixed(1)} s · <b>${r(p.rpm0)}→${r(p.rpm1)}</b> rpm</div><div class="p2">${bits.join('')}</div></div>`;
+    }).join('');
+  }
+  renderPulls(); renderTune();
+  $('tReset').onclick = () => { tWorst = [0,0,0,0]; railMin = null; leanMax = null; ext = {}; pulls = []; saveTune(); renderPulls(); renderTune(); toast('Tune session reset'); };
   let curTab = 'g';
 
   // ================= warnings, shift light, light cues =================
