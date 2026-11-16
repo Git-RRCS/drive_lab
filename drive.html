@@ -23,8 +23,8 @@
          padding-top:max(10px, env(safe-area-inset-top)); }
   body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:20;
                 background:repeating-linear-gradient(180deg, transparent 0 2px, rgba(0,0,0,.22) 2px 3px); opacity:.35; }
-  body.night { filter:brightness(.72) saturate(.9); }
-  body.night { --glow:drop-shadow(0 0 3px rgba(var(--ro),.35)); }
+  body.night { filter:brightness(.86) saturate(.95); }
+  body.night { --glow:drop-shadow(0 0 4px rgba(var(--ro),.45)); }
   button { font:500 15px var(--serif); letter-spacing:.06em; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; cursor:pointer; text-transform:uppercase; }
   button:active { transform:scale(.97); }
   button.on { background:rgba(var(--ac),.16); border-color:var(--mag); color:#fff; box-shadow:0 0 10px rgba(var(--ac),.35), inset 0 0 8px rgba(var(--ac),.2); }
@@ -205,7 +205,7 @@
     0%  { opacity:.85; filter:drop-shadow(3px 0 0 rgba(255,0,90,.9)) drop-shadow(-3px 0 0 rgba(0,240,255,.8)); }
     20% { opacity:.25; } 35% { opacity:.7; filter:drop-shadow(-2px 0 0 rgba(255,0,90,.8)); }
     55% { opacity:.3; } 70% { opacity:.55; } 100% { opacity:calc(.13 + var(--b) * .22); filter:none; } }
-  body.night .wall { opacity:calc(.08 + var(--b) * .15); }
+  body.night .wall { opacity:calc(.11 + var(--b) * .18); }
 
   /* telltale lamp row: unlit labels stay faintly visible, like real lamps */
   .lamps { display:grid; grid-template-columns:repeat(6,1fr); gap:4px; margin-top:clamp(8px,2vh,20px); }
@@ -315,7 +315,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v32 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v33 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
