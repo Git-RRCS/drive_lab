@@ -319,7 +319,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v34 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v35 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -531,7 +531,7 @@
           const cb = await readDid('202A').catch(() => null);
           if (cb) { tv['202A'] = tuneDecode('202A', cb); o['0B'] = [Math.round(tv['202A'])]; o._hi = tv['202A']; }
         }
-        if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; boostReact(psi); paintLamps(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
+        if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; livePsi = psi; livePsiT = Date.now(); boostReact(psi); paintLamps(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
         if (o['0C']) { const r = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4); setSeg('rpm', String(Math.round(r / 10) * 10), 4); setVB('gRpm', r); }
         if (o['05']) { const v = F(o['05'][0]); setSeg('cool', String(v), 3); temps.cool = v; setVB('gCool', v); }
         if (o['0F']) { const v = F(o['0F'][0]); setSeg('iat', String(v), 3); temps.iat = v; setVB('gIat', v); }
@@ -550,7 +550,8 @@
   const TDIDS = ['202A','2029','200A','200B','200C','200D','F423','10C0','1456','39A2','39A3','437C'];
   // Background capture on other tabs: just the safety items, so session worsts are recorded during pulls
   const TBG = ['200A','200B','200C','200D','F423','10C0','1456','202A'];
-  const tUnsupported = new Set(); let tIdx = 0, tBgIdx = 0;
+  const tUnsupported = new Set(); let tIdx = 0, tBgIdx = 0, livePsi = null, livePsiT = 0;
+  const tvT = {};   // when each value was read
   const tv = {}; const tWorst = [0,0,0,0]; let railMin = null, leanMax = null;
   const cylEls = [];
   for (let i = 0; i < 4; i++) { const d = document.createElement('div'); d.innerHTML = `<div class="v">–</div><div class="w">cyl ${i+1}</div>`; $('tCyl').appendChild(d); cylEls.push(d); }
@@ -576,24 +577,25 @@
     const live = TBG.filter(d => !tUnsupported.has(d)); if (!live.length) return;
     const did = live[tBgIdx++ % live.length];
     const b = await readDid(did).catch(() => null);
-    if (b) { tv[did] = tuneDecode(did, b); renderTune(); }
+    if (b) { tv[did] = tuneDecode(did, b); tvT[did] = Date.now(); renderTune(); }
   }
   async function tunePoll(count) {
     const live = TDIDS.filter(d => !tUnsupported.has(d)); if (!live.length) return;
     for (let k = 0; k < count; k++) {
       const did = live[tIdx++ % live.length];
       const b = await readDid(did).catch(() => null);
-      if (b) tv[did] = tuneDecode(did, b);
+      if (b) { tv[did] = tuneDecode(did, b); tvT[did] = Date.now(); }
     }
     renderTune();
   }
   const fmt = (v, d = 1) => v == null ? '–' : v.toFixed(d);
   function renderTune() {
-    const onBoost = tv['202A'] != null && baro != null && (tv['202A'] - baro) * KPA_PSI > 5;
+    const now = Date.now(), fresh = (did, ms = 600) => tvT[did] && now - tvT[did] < ms;
+    const onBoost = livePsi != null && livePsi > 5 && now - livePsiT < 400;
     const bA = tv['202A'] != null && baro != null ? (tv['202A'] - baro) * KPA_PSI : null;
     const bT = tv['2029'] != null && baro != null ? (tv['2029'] - baro) * KPA_PSI : null;
     $('tBa').textContent = fmt(bA); $('tBt').textContent = fmt(bT);
-    $('tBd').textContent = bA != null && bT != null ? ((bA - bT >= 0 ? '+' : '') + (bA - bT).toFixed(1)) : '–';
+    const dd = bA != null && bT != null ? Math.round((bA - bT) * 10) / 10 : null; $('tBd').textContent = dd == null ? '–' : (dd > 0 ? '+' : '') + (dd === 0 ? '0.0' : dd.toFixed(1));
     ['200A','200B','200C','200D'].forEach((did, i) => {
       const v = tv[did]; if (v == null) return;
       if (v < tWorst[i]) tWorst[i] = v;
@@ -601,11 +603,13 @@
       el.querySelector('.w').textContent = `cyl ${i+1} · ${tWorst[i].toFixed(1)}`;
       el.className = tWorst[i] <= -5 ? 'crit' : tWorst[i] <= -3 ? 'warn' : '';
     });
-    if (tv['F423'] != null) { $('tRail').textContent = fmt(tv['F423'], 0); if (onBoost) railMin = railMin == null ? tv['F423'] : Math.min(railMin, tv['F423']); }
+    if (tv['F423'] != null) { $('tRail').textContent = fmt(tv['F423'], 0); if (onBoost && fresh('F423', 400)) railMin = railMin == null ? tv['F423'] : Math.min(railMin, tv['F423']); }
     $('tRailMin').textContent = fmt(railMin, 0);
     $('tTq').textContent = fmt(tv['437C'], 0);
     $('tLa').textContent = fmt(tv['10C0'], 2); $('tLt').textContent = fmt(tv['1456'], 2);
-    if (onBoost && tv['10C0'] != null && tv['1456'] != null) { const d = tv['10C0'] - tv['1456']; leanMax = leanMax == null ? d : Math.max(leanMax, d); }
+    // lean check: both lambdas read within the last moment, while on boost, and not a fuel-cut reading (pure air reads very lean)
+    if (onBoost && fresh('10C0') && fresh('1456') && tv['10C0'] < 1.3 && tv['1456'] <= 1.05) {
+      const d = tv['10C0'] - tv['1456']; leanMax = leanMax == null ? d : Math.max(leanMax, d); }
     $('tLd').textContent = leanMax == null ? '–' : (leanMax >= 0 ? '+' : '') + leanMax.toFixed(2);
     $('tLd').style.color = leanMax != null && leanMax > 0.05 ? 'var(--warn)' : '';
     $('tWa').textContent = fmt(tv['39A2'], 0); $('tWt').textContent = fmt(tv['39A3'], 0);
