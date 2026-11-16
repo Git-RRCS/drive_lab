@@ -116,7 +116,7 @@
   <div class="label" id="boostLabel">Boost · psi</div>
   <div class="val" id="boostVal">–</div>
   <div class="bar"><div class="vac" id="vacFill"></div><div class="fill" id="boostFill"></div><div class="peak" id="peakMark"></div></div>
-  <div class="scale"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span></div>
+  <div class="scale"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span><span>30</span></div>
   <div class="peakline"><span>Peak <b id="peakVal">0.0</b></span><span id="hz"></span></div>
 </div>
 
@@ -135,7 +135,8 @@
   <div class="ctl"><span class="t">Bright</span><input type="range" id="bright" min="1" max="100"></div>
   <div class="motor" id="motor"></div>
   <div class="cues"><button id="reGlow">Boost glow</button><button id="reTwinkle">Boost twinkle</button><button id="cueWarn">Warning flashes</button><button id="cueShift">Shift flash</button></div>
-  <div class="foot" style="justify-content:center"><span id="reNote">Glow: your brightness up to full at 18 psi, blending to red from ~13 psi</span></div>
+  <div class="ctl"><span class="t">Red from <b id="rfV"></b></span><input type="range" id="redFrom" min="2" max="30" step="1"></div>
+  <div class="ctl"><span class="t">Full red <b id="rtV"></b></span><input type="range" id="redFull" min="6" max="40" step="1"></div>
 </div>
 </section>
 
@@ -154,7 +155,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v13 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
+<div class="foot"><span id="foot">v14 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="toast" id="toast"></div>
@@ -178,7 +179,7 @@
 
   let lightChar = null, lightDev = null, pend = null, lt = null;
   function lightSend() {
-    store.set('dd_light', L); renderLight(); if (typeof env !== 'undefined') { env = null; sentMix = null; sentBright = null; sentSpeed = null; twSpeed = null; }
+    store.set('dd_light', L); renderLight(); if (typeof env !== 'undefined') { env = null; redEnv = 0; sentMix = null; sentBright = null; sentSpeed = null; twSpeed = null; }
     pend = Uint8Array.from(L); if (!lt) lightFlush();
   }
   function liveSend(f) { pend = Uint8Array.from(f); if (!lt) lightFlush(); }
@@ -296,9 +297,9 @@
     if (psi < 0 && showVac) { $('boostVal').textContent = (-diffKpa * KPA_INHG).toFixed(1); $('boostLabel').textContent = 'Vacuum · inHg';
       $('boostFill').style.width = '0%'; $('vacFill').style.width = Math.min(100, -diffKpa / 0.8) + '%'; $('vacFill').style.right = 'auto'; $('vacFill').style.left = '0'; }
     else { $('boostVal').textContent = Math.max(0, psi).toFixed(1); $('boostLabel').textContent = 'Boost · psi';
-      $('vacFill').style.width = '0%'; $('boostFill').style.width = Math.min(100, Math.max(0, psi) / 25 * 100) + '%'; }
+      $('vacFill').style.width = '0%'; $('boostFill').style.width = Math.min(100, Math.max(0, psi) / 30 * 100) + '%'; }
   }
-  function showPeak() { $('peakVal').textContent = peak.toFixed(1); const m = $('peakMark'); m.style.display = peak > 0.3 ? 'block' : 'none'; m.style.left = Math.min(100, peak / 25 * 100) + '%'; }
+  function showPeak() { $('peakVal').textContent = peak.toFixed(1); const m = $('peakMark'); m.style.display = peak > 0.3 ? 'block' : 'none'; m.style.left = Math.min(100, peak / 30 * 100) + '%'; }
   const F = c => Math.round((c - 40) * 9/5 + 32);
 
   async function loop() {
@@ -311,7 +312,11 @@
         if (n % 100 === 50) Object.assign(o, await q(['33']));
         if (curTab === 't') await tunePoll(3);
         if (o['33']) baro = o['33'][0];
-        if (o['0B'] && baro != null) { const d = o['0B'][0] - baro; showBoost(d); const psi = d * KPA_PSI; boostReact(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
+        if (o['0B'] && o['0B'][0] >= 250 && !tUnsupported.has('202A')) {
+          const cb = await readDid('202A').catch(() => null);
+          if (cb) { tv['202A'] = tuneDecode('202A', cb); o['0B'] = [Math.round(tv['202A'])]; o._hi = tv['202A']; }
+        }
+        if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; boostReact(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
         if (o['0C']) $('rpm').textContent = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4);
         if (o['05']) { const v = F(o['05'][0]); $('cool').textContent = v; temps.cool = v; }
         if (o['0F']) { const v = F(o['0F'][0]); $('iat').textContent = v; temps.iat = v; }
@@ -485,7 +490,8 @@
   let reGlow = store.get('dd_reGlow', false), reTwinkle = store.get('dd_reTwinkle', false);
   const GLOW_FULL_PSI = 18;
   const RED = [220,0,18,0];         // deep red, a brighter cousin of the head unit's oxblood
-  const RED_START = 0.7;           // start blending at 70% of full (about 12.6 psi)
+  let redFrom = store.get('dd_redFrom', 8), redFull = store.get('dd_redFull', 22);  // psi
+  let redEnv = 0;                  // separate, slower envelope so the color sweeps instead of snapping
   let sentMix = null;
   let env = null, sentBright = null, sentSpeed = null, twSpeed = null, twLast = 0, twChanges = [];
   function boostReact(psi) {
@@ -499,8 +505,10 @@
       env += (target - env) * (target > env ? 0.6 : 0.08);
       bright = Math.max(1, Math.min(100, Math.round(env)));
       // near the top of the range, blend the user's color toward red (follows the same smooth envelope)
-      const frac = base >= 100 ? Math.max(0, Math.min(1, psi / GLOW_FULL_PSI)) : (env - base) / (100 - base);
-      mix = Math.round(Math.max(0, Math.min(1, (frac - RED_START) / (1 - RED_START))) * 20) / 20;
+      const x = Math.max(0, Math.min(1, (psi - redFrom) / Math.max(1, redFull - redFrom)));
+      const target2 = x * x * (3 - 2 * x);                       // smoothstep: gentle start, gentle finish
+      redEnv += (target2 - redEnv) * (target2 > redEnv ? 0.12 : 0.05);
+      mix = Math.round(redEnv * 40) / 40;
     }
     // motor: only adjust speed while the user has the motor on; step up with boost, with dwell + rate cap
     let speed = L[14];
@@ -524,12 +532,16 @@
       sentBright = bright; sentSpeed = speed; sentMix = mix; liveSend(f);
     }
   }
-  function reactOffRestore() { env = null; sentMix = null; sentBright = null; sentSpeed = null; twSpeed = null; if (lightChar) liveSend(L); }
+  function reactOffRestore() { env = null; redEnv = 0; sentMix = null; sentBright = null; sentSpeed = null; twSpeed = null; if (lightChar) liveSend(L); }
   function renderReact() { $('reGlow').className = reGlow ? 'on' : ''; $('reTwinkle').className = reTwinkle ? 'on' : ''; }
   $('reGlow').onclick = () => { reGlow = !reGlow; store.set('dd_reGlow', reGlow); renderReact(); if (!reGlow) reactOffRestore(); toast('Boost glow ' + (reGlow ? 'on' : 'off')); };
   $('reTwinkle').onclick = () => { reTwinkle = !reTwinkle; store.set('dd_reTwinkle', reTwinkle); renderReact(); if (!reTwinkle) reactOffRestore();
     toast(reTwinkle ? (L[13] ? 'Boost twinkle on' : 'Boost twinkle on — turn the motor on to use it') : 'Boost twinkle off'); };
   renderReact();
+  function renderRed() { $('redFrom').value = redFrom; $('redFull').value = redFull; $('rfV').textContent = redFrom + ' psi'; $('rtV').textContent = redFull + ' psi'; }
+  $('redFrom').addEventListener('input', e => { redFrom = +e.target.value; if (redFull < redFrom + 4) redFull = redFrom + 4; store.set('dd_redFrom', redFrom); store.set('dd_redFull', redFull); renderRed(); });
+  $('redFull').addEventListener('input', e => { redFull = +e.target.value; if (redFrom > redFull - 4) redFrom = Math.max(2, redFull - 4); store.set('dd_redFrom', redFrom); store.set('dd_redFull', redFull); renderRed(); });
+  renderRed();
 
   // ================= connection management =================
   const retries = {};
