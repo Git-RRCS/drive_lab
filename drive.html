@@ -143,6 +143,12 @@
   .summon.full .lit .cap { opacity:1; }
   .summon.full svg { animation:summon 1.2s ease-in-out infinite; }
   @keyframes summon { 50% { filter:brightness(1.35); } }
+  /* Uno: big sigil (never smaller than v22), bars never collapse, digits sized to fit */
+  body.uno #tabGauges .hero { justify-content:space-between; }
+  body.uno .val { margin:clamp(4px,1.2vh,20px) auto 4px; width:min(96%, 560px, 37vh); }
+  body.uno .tach { height:clamp(36px, 6vh, 64px); }
+  body.uno .summon { flex:1 1 0; min-height:118px; margin-top:clamp(4px,1vh,12px); }
+  body.uno .summon svg { max-height:230px; max-width:70%; }
   @media (max-height:790px) { .summon { min-height:44px; } .peakline { margin-top:4px; } .tach { height:40px; } .lamps { margin-top:6px; } }
   /* idle breathing so it reads as alive, not decoration */
   .summon .base { animation:breathe 6s ease-in-out infinite; }
@@ -267,7 +273,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v23 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v24 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="toast" id="toast"></div>
