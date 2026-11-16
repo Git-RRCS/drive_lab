@@ -121,12 +121,12 @@
   <div class="ctl"><span class="t">Bright</span><input type="range" id="bright" min="1" max="100"></div>
   <div class="motor" id="motor"></div>
   <div class="cues"><button id="reGlow">Boost glow</button><button id="reTwinkle">Boost twinkle</button><button id="cueWarn">Warning flashes</button><button id="cueShift">Shift flash</button></div>
-  <div class="foot" style="justify-content:center"><span id="reNote">Glow uses your brightness as the floor, full at 18 psi</span></div>
+  <div class="foot" style="justify-content:center"><span id="reNote">Glow: your brightness up to full at 18 psi, blending to red from ~13 psi</span></div>
 </div>
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v11 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
+<div class="foot"><span id="foot">v12 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="toast" id="toast"></div>
@@ -150,7 +150,7 @@
 
   let lightChar = null, lightDev = null, pend = null, lt = null;
   function lightSend() {
-    store.set('dd_light', L); renderLight(); if (typeof env !== 'undefined') { env = null; sentBright = null; sentSpeed = null; twSpeed = null; }
+    store.set('dd_light', L); renderLight(); if (typeof env !== 'undefined') { env = null; sentMix = null; sentBright = null; sentSpeed = null; twSpeed = null; }
     pend = Uint8Array.from(L); if (!lt) lightFlush();
   }
   function liveSend(f) { pend = Uint8Array.from(f); if (!lt) lightFlush(); }
@@ -393,17 +393,23 @@
   // ================= boost-reactive lighting =================
   let reGlow = store.get('dd_reGlow', false), reTwinkle = store.get('dd_reTwinkle', false);
   const GLOW_FULL_PSI = 18;
+  const RED = [220,0,18,0];         // deep red, a brighter cousin of the head unit's oxblood
+  const RED_START = 0.7;           // start blending at 70% of full (about 12.6 psi)
+  let sentMix = null;
   let env = null, sentBright = null, sentSpeed = null, twSpeed = null, twLast = 0, twChanges = [];
   function boostReact(psi) {
     if (!lightChar || cueBusy || !L[1] || (!reGlow && !reTwinkle)) return;
     const now = Date.now(), base = L[9];
     // brightness envelope: fast attack, slow release
-    let bright = base;
+    let bright = base, mix = 0;
     if (reGlow) {
       const target = base + Math.max(0, Math.min(1, psi / GLOW_FULL_PSI)) * (100 - base);
       if (env == null) env = base;
       env += (target - env) * (target > env ? 0.6 : 0.08);
       bright = Math.max(1, Math.min(100, Math.round(env)));
+      // near the top of the range, blend the user's color toward red (follows the same smooth envelope)
+      const frac = base >= 100 ? Math.max(0, Math.min(1, psi / GLOW_FULL_PSI)) : (env - base) / (100 - base);
+      mix = Math.round(Math.max(0, Math.min(1, (frac - RED_START) / (1 - RED_START))) * 20) / 20;
     }
     // motor: only adjust speed while the user has the motor on; step up with boost, with dwell + rate cap
     let speed = L[14];
@@ -420,12 +426,14 @@
       }
       speed = twSpeed;
     }
-    if (bright !== sentBright || speed !== sentSpeed) {
-      if (sentBright != null && Math.abs(bright - sentBright) < 2 && speed === sentSpeed) return;
-      const f = L.slice(); f[9] = bright; f[14] = speed; sentBright = bright; sentSpeed = speed; liveSend(f);
+    if (bright !== sentBright || speed !== sentSpeed || mix !== sentMix) {
+      if (sentBright != null && Math.abs(bright - sentBright) < 2 && speed === sentSpeed && mix === sentMix) return;
+      const f = L.slice(); f[9] = bright; f[14] = speed;
+      for (let i = 0; i < 4; i++) f[5 + i] = Math.round(L[5 + i] + (RED[i] - L[5 + i]) * mix);
+      sentBright = bright; sentSpeed = speed; sentMix = mix; liveSend(f);
     }
   }
-  function reactOffRestore() { env = null; sentBright = null; sentSpeed = null; twSpeed = null; if (lightChar) liveSend(L); }
+  function reactOffRestore() { env = null; sentMix = null; sentBright = null; sentSpeed = null; twSpeed = null; if (lightChar) liveSend(L); }
   function renderReact() { $('reGlow').className = reGlow ? 'on' : ''; $('reTwinkle').className = reTwinkle ? 'on' : ''; }
   $('reGlow').onclick = () => { reGlow = !reGlow; store.set('dd_reGlow', reGlow); renderReact(); if (!reGlow) reactOffRestore(); toast('Boost glow ' + (reGlow ? 'on' : 'off')); };
   $('reTwinkle').onclick = () => { reTwinkle = !reTwinkle; store.set('dd_reTwinkle', reTwinkle); renderReact(); if (!reTwinkle) reactOffRestore();
