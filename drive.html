@@ -315,7 +315,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v31 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v32 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -627,10 +627,27 @@
 
   // Briefly flash the fiber light, then restore the user's state. Dimmer at night.
   let cueBusy = false;
+  // Glitch the fiber light for `ms`: random flickers, dropouts, red stutters, brightness jumps.
+  // Never touches the motor bytes; restores the user's state at the end.
+  async function lightGlitch(ms) {
+    if (!lightChar || cueBusy) return; cueBusy = true;
+    const h = new Date().getHours(), night = h >= 19 || h < 7, top = night ? 45 : 100, end = Date.now() + ms;
+    const send = async f => { try { await lightChar.writeValueWithoutResponse(Uint8Array.from(f)); } catch(e) {} };
+    while (Date.now() < end && lightChar) {
+      const f = L.slice(); f[1] = 0xff; const r = Math.random();
+      if (r < .18) f[1] = 0;                                                          // dropout
+      else if (r < .45) { f[5] = 255; f[6] = 0; f[7] = 12; f[8] = 0; f[9] = top; }    // red stutter
+      else if (r < .58) { f[5] = 0; f[6] = 0; f[7] = 0; f[8] = 255; f[9] = top; }     // white flash
+      else f[9] = Math.max(3, Math.round(Math.random() * top));                       // user color, random level
+      await send(f);
+      await new Promise(x => setTimeout(x, 70 + Math.random() * 170));
+    }
+    await send(L); cueBusy = false;
+  }
   async function lightCue(rgb, times, onMs = 220, offMs = 180) {
     if (!lightChar || cueBusy) return; cueBusy = true;
     const h = new Date().getHours(), night = h >= 19 || h < 7;
-    const f = L.slice(); f[1] = 0xff; [f[5],f[6],f[7]] = rgb; f[8] = 0; f[9] = night ? 20 : 70; f[13] = 0; f[14] = 0;
+    const f = L.slice(); f[1] = 0xff; [f[5],f[6],f[7]] = rgb; f[8] = 0; f[9] = night ? 20 : 70;   // motor bytes (13/14) untouched
     const off = f.slice(); off[1] = 0;
     for (let i = 0; i < times; i++) {
       try { await lightChar.writeValueWithoutResponse(Uint8Array.from(f)); } catch(e) {}
@@ -925,9 +942,10 @@
     const src = 'summon.webp?t=' + Date.now();              // restart the boot animation from frame one
     $('eggImg').src = src; $('eggTint').style.webkitMaskImage = $('eggTint').style.maskImage = `url(${src})`;
     e.classList.add('noise');
+    lightGlitch(3400);
     at(120, () => e.classList.add('p1'));
     at(500, () => e.classList.remove('noise'));
-    at(3500, () => { e.classList.add('p3', 'noise'); document.body.classList.add('eggshake'); lightCue([255, 0, 0], 2, 260, 160); });
+    at(3500, () => { e.classList.add('p3', 'noise'); document.body.classList.add('eggshake'); setTimeout(() => lightCue([255, 0, 0], 2, 260, 160), 150); });
     at(4300, () => { e.classList.remove('p3', 'noise'); document.body.classList.remove('eggshake'); });
     at(6000, eggClose);
   }
