@@ -213,6 +213,10 @@
                 border:1px solid rgba(var(--ro),.14); border-radius:3px; color:rgba(var(--ro),.22); background:rgba(var(--ro),.03); }
   .lamps span.on { color:#0a0505; background:rgb(var(--ro)); border-color:rgb(var(--ro)); box-shadow:0 0 8px rgba(var(--ro),.7); }
   .lamps span.amber { color:#120a00; background:var(--warn); border-color:var(--warn); box-shadow:0 0 8px rgba(255,176,0,.7); }
+  .lamps span.cold { color:#120a00; background:var(--warn); border-color:var(--warn); animation:coldpulse 2.4s ease-in-out infinite; }
+  @keyframes coldpulse { 50% { opacity:.45; } }
+  .lamps span.ready { animation:readyblink .35s steps(1) 6; }
+  @keyframes readyblink { 50% { opacity:.2; } }
   .lamps span.red { color:#fff; background:#d01616; border-color:#ff4040; box-shadow:0 0 10px rgba(255,40,40,.8); animation:blink .5s steps(1) infinite; }
   body.uno .lamps span.red { background:#fff; color:#300; border-color:#fff; }
   .vb { display:none; flex-direction:column-reverse; gap:2px; width:9px; height:44px; position:absolute; right:7px; bottom:10px; }
@@ -276,7 +280,7 @@
     <g class="lit"><path class="tri" pathLength="1" d="M6,8 L94,8 L50,92 Z"/><line class="tr" data-i="0" pathLength="1" x1="66" y1="21" x2="50" y2="37"/><line class="tr" data-i="1" pathLength="1" x1="50" y1="37" x2="34" y2="21"/><line class="tr" data-i="2" pathLength="1" x1="34" y1="21" x2="50" y2="21"/><line class="tr" data-i="3" pathLength="1" x1="50" y1="21" x2="50" y2="53"/><line class="tr" data-i="4" pathLength="1" x1="50" y1="53" x2="66" y2="21"/><line class="tr" data-i="5" pathLength="1" x1="66" y1="21" x2="34" y2="37"/><line class="tr" data-i="6" pathLength="1" x1="34" y1="37" x2="34" y2="53"/><circle class="cap" cx="66" cy="21" r="3.6"/><line class="cap" x1="28" y1="53" x2="40" y2="53"/></g>
   </svg><div class="wall" id="wallR"></div></div>
   <div class="lamps" id="lamps">
-    <span id="lpA">15 psi</span><span id="lpB">22 psi</span><span id="lpShift">Shift</span><span id="lpHot">Hot</span><span id="lpLight">Light</span><span id="lpObd">OBD</span>
+    <span id="lpA">15 psi</span><span id="lpB">22 psi</span><span id="lpShift">Shift</span><span id="lpHot">Hot</span><span id="lpLight">Light</span><span id="lpWarm">Warm</span>
   </div>
 </div>
 
@@ -315,7 +319,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v33 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v34 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -677,7 +681,7 @@
     if (c != null) return c >= 175 ? REDLINE : Math.round(4000 + Math.max(0, Math.min(1, (c - 110) / 65)) * (REDLINE - 4000));
     return REDLINE;
   }
-  let lastShiftFlash = 0, wasRed = false;
+  let lastShiftFlash = 0, wasRed = false, warmState = null;
 
   function evaluate(rpm) {
     const now = Date.now();
@@ -699,6 +703,15 @@
       if (s.level === 2 && !alarmKey && (now >= s.snoozeUntil || v >= s.snoozeVal + 5) && s.snoozeUntil) { s.snoozeUntil = 0; showAlarm(k, v); beep(); }
       tile.classList.toggle('warn', s.level === 1); tile.classList.toggle('crit', s.level === 2);
       if (alarmKey === k) $('alarmNum').textContent = v + '°F';
+    }
+    // warm-up lamp: COLD until oil reaches 180F (coolant 175F until oil temp is mapped), then READY
+    const wv = temps.oil != null ? temps.oil : temps.cool, wReady = temps.oil != null ? 180 : 175;
+    if (wv != null) {
+      const ready = wv >= (warmState === 'ready' ? wReady - 10 : wReady), el = $('lpWarm');   // 10F hysteresis
+      if (ready && warmState === 'cold') { toast('Up to temp' + (temps.oil != null ? ' · oil ' + temps.oil + '°F' : '')); el.textContent = 'Ready'; el.className = 'on ready'; setTimeout(() => { if (warmState === 'ready') el.className = 'on'; }, 2200); }
+      else if (!ready) { el.textContent = 'Cold'; el.className = 'cold'; }
+      else if (warmState === null) { el.textContent = 'Ready'; el.className = 'on'; }
+      warmState = ready ? 'ready' : 'cold';
     }
     // oil / coolant warm-up notes
     const oilCold = temps.oil != null && temps.oil < 170, coolCold = temps.oil == null && temps.cool != null && temps.cool < 160;
@@ -825,7 +838,7 @@
   async function keepAwake() { try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => wake = null); } } catch(e) {} }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (lightChar || obdW)) keepAwake(); });
 
-  function syncConnect() { $('btnConnect').classList.toggle('hidden', !!(lightChar && obdW)); $('lpLight').className = lightChar ? 'on' : ''; $('lpObd').className = obdW ? 'on' : ''; }
+  function syncConnect() { $('btnConnect').classList.toggle('hidden', !!(lightChar && obdW)); $('lpLight').className = lightChar ? 'on' : ''; }
   setInterval(syncConnect, 1000);
   document.querySelectorAll('.chip').forEach(c => c.onclick = () => $('btnConnect').click());
   $('btnConnect').onclick = () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch(e) {} connectAll(); };
@@ -864,7 +877,7 @@
     on('lpShift', shiftState === 2 ? 'red' : shiftState === 1 ? 'amber' : '');
     let worst = 0; for (const k in st8) worst = Math.max(worst, st8[k].level);
     on('lpHot', worst === 2 ? 'red' : worst === 1 ? 'amber' : '');
-    on('lpLight', lightChar ? 'on' : ''); on('lpObd', obdW ? 'on' : '');
+    on('lpLight', lightChar ? 'on' : '');
     paintSummon(psi);
   }
   // sigil trace: progress 0..7 strokes, each stroke draws along its length; fast rise, slow fall
