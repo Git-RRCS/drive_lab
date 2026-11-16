@@ -157,7 +157,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v15 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
+<div class="foot"><span id="foot">v16 · tap peak to reset · long-press boost for vacuum</span><a href="./">Lab</a></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="toast" id="toast"></div>
@@ -313,6 +313,7 @@
         if (oilStd && n % 15 === 11) Object.assign(o, await q(['5C']));
         if (n % 100 === 50) Object.assign(o, await q(['33']));
         if (curTab === 't') await tunePoll(3);
+        else if (n % 3 === 1) await tuneBackground();   // ~1 safety value every 3rd cycle on other tabs
         if (o['33']) baro = o['33'][0];
         if (o['0B'] && o['0B'][0] >= 250 && !tUnsupported.has('202A')) {
           const cb = await readDid('202A').catch(() => null);
@@ -335,7 +336,9 @@
   // ================= tune health (VW mode 22, Simos18 engine computer) =================
   // From bri3d/MQBSimosLogVariables. All single-frame replies: 62 + DID(2) + data(2)
   const TDIDS = ['202A','2029','200A','200B','200C','200D','F423','10C0','1456','39A2','39A3','437C'];
-  const tUnsupported = new Set(); let tIdx = 0;
+  // Background capture on other tabs: just the safety items, so session worsts are recorded during pulls
+  const TBG = ['200A','200B','200C','200D','F423','10C0','1456','202A'];
+  const tUnsupported = new Set(); let tIdx = 0, tBgIdx = 0;
   const tv = {}; const tWorst = [0,0,0,0]; let railMin = null, leanMax = null;
   const cylEls = [];
   for (let i = 0; i < 4; i++) { const d = document.createElement('div'); d.innerHTML = `<div class="v">–</div><div class="w">cyl ${i+1}</div>`; $('tCyl').appendChild(d); cylEls.push(d); }
@@ -356,6 +359,12 @@
       case '39A2': case '39A3': return (b[0]*256 + b[1]) * 0.01;         // %
       case '437C': return (b[0]*256 + b[1]) * 0.1 * 0.7376;              // lb-ft
     }
+  }
+  async function tuneBackground() {
+    const live = TBG.filter(d => !tUnsupported.has(d)); if (!live.length) return;
+    const did = live[tBgIdx++ % live.length];
+    const b = await readDid(did).catch(() => null);
+    if (b) { tv[did] = tuneDecode(did, b); renderTune(); }
   }
   async function tunePoll(count) {
     const live = TDIDS.filter(d => !tUnsupported.has(d)); if (!live.length) return;
