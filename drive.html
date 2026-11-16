@@ -288,7 +288,7 @@
     <g class="lit"><path class="tri" pathLength="1" d="M6,8 L94,8 L50,92 Z"/><line class="tr" data-i="0" pathLength="1" x1="66" y1="21" x2="50" y2="37"/><line class="tr" data-i="1" pathLength="1" x1="50" y1="37" x2="34" y2="21"/><line class="tr" data-i="2" pathLength="1" x1="34" y1="21" x2="50" y2="21"/><line class="tr" data-i="3" pathLength="1" x1="50" y1="21" x2="50" y2="53"/><line class="tr" data-i="4" pathLength="1" x1="50" y1="53" x2="66" y2="21"/><line class="tr" data-i="5" pathLength="1" x1="66" y1="21" x2="34" y2="37"/><line class="tr" data-i="6" pathLength="1" x1="34" y1="37" x2="34" y2="53"/><circle class="cap" cx="66" cy="21" r="3.6"/><line class="cap" x1="28" y1="53" x2="40" y2="53"/></g>
   </svg><div class="wall" id="wallR"></div></div>
   <div class="lamps" id="lamps">
-    <span id="lpA">15 psi</span><span id="lpB">22 psi</span><span id="lpShift">Shift</span><span id="lpHot">Hot</span><span id="lpLight">Light</span><span id="lpWarm">Warm</span>
+    <span id="lpA">15 psi</span><span id="lpB">22 psi</span><span id="lpShift">Shift</span><span id="lpHot">Hot</span><span id="lpMode">Mode</span><span id="lpWarm">Warm</span>
   </div>
 </div>
 
@@ -329,7 +329,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v38 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v39 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -977,7 +977,7 @@
   async function keepAwake() { try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => wake = null); } } catch(e) {} }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (lightChar || obdW)) keepAwake(); });
 
-  function syncConnect() { $('btnConnect').classList.toggle('hidden', !!(lightChar && obdW)); $('lpLight').className = lightChar ? 'on' : ''; }
+  function syncConnect() { $('btnConnect').classList.toggle('hidden', !!(lightChar && obdW)); }
   setInterval(syncConnect, 1000);
   document.querySelectorAll('.chip').forEach(c => c.onclick = () => $('btnConnect').click());
   $('btnConnect').onclick = () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch(e) {} connectAll(); };
@@ -1008,6 +1008,15 @@
     if (vbLast[gid] === n) return; vbLast[gid] = n;
     [...document.querySelector(`[data-vb="${gid}"]`).children].forEach((e, i) => e.classList.toggle('lit', i < n));
   }
+  // Drive mode + DSG: placeholders until the scanner finds where they live (engine / transmission computers)
+  let driveMode = null;   // 'Comfort' | 'Normal' | 'Race' | 'Individual' | null
+  let dsgMode = null, gear = null;   // 'D' | 'S' | 'M', 1-6
+  const MODE_ABBR = { Comfort:'Comf', Normal:'Norm', Race:'Race', Individual:'Indv', Eco:'Eco' };
+  function paintMode() {
+    const el = $('lpMode'); el.textContent = driveMode ? MODE_ABBR[driveMode] || driveMode : 'Mode';
+    el.className = driveMode === 'Race' ? 'on' : '';   // only Race lights it; amber stays reserved for caution
+    const sub = $('rpmSub'); if (dsgMode && !sub.textContent.startsWith('warm')) sub.textContent = dsgMode + (gear ? ' · ' + gear : '');
+  }
   let LAMP_A = 15, LAMP_B = 22, shiftState = 0;   // shiftState: 0 none, 1 amber zone, 2 at limit
   const SUMMON_FROM = 2, SUMMON_FULL = 22;            // psi: first stroke ... whole sigil
   function paintLamps(psi) {
@@ -1016,7 +1025,7 @@
     on('lpShift', shiftState === 2 ? 'red' : shiftState === 1 ? 'amber' : '');
     let worst = 0; for (const k in st8) worst = Math.max(worst, st8[k].level);
     on('lpHot', worst === 2 ? 'red' : worst === 1 ? 'amber' : '');
-    on('lpLight', lightChar ? 'on' : '');
+    paintMode();
     paintSummon(psi);
   }
   // sigil trace: progress 0..7 strokes, each stroke draws along its length; fast rise, slow fall

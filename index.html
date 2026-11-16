@@ -42,7 +42,7 @@
 </head>
 <body>
 <h1>Bandersnatch · Lab</h1>
-<div class="sub">YX_LED fiber engine · MySmartLED protocol · <b>v38</b> · <a href="drive.html" style="color:#4ea1ff">Open driving screen →</a></div>
+<div class="sub">YX_LED fiber engine · MySmartLED protocol · <b>v39</b> · <a href="drive.html" style="color:#4ea1ff">Open driving screen →</a></div>
 
 <div class="card">
   <button class="primary" id="btnConnect">Connect to YX_LED</button>
@@ -105,18 +105,23 @@
 </div>
 
 <div class="card">
-  <h2>Data code scanner (engine computer)</h2>
+  <h2>Data code scanner</h2>
   <div class="hint">Read-only: it only <i>asks</i> the engine computer for values (UDS 0x22); it never writes or changes anything. Connect the OBD adapter above first. Keep the phone awake and on this page.</div>
 
+  <label>Module</label>
+  <div class="row" id="scMods"></div>
   <label>1 · Discover <span id="scDiscStat">–</span></label>
   <div style="height:10px;background:#0f1318;border-radius:5px;overflow:hidden;border:1px solid var(--line)"><div id="scBar" style="height:100%;width:0;background:var(--acc)"></div></div>
   <div class="row" style="margin-top:8px"><button id="scDisc">Start discovery</button><button id="scDiscStop">Pause</button></div>
-  <div class="hint" style="margin-top:6px">Checks codes 1000–4FFF and F400–F4FF (~16,600). About 10 min, parked, ignition on. Pause/resume is safe.</div>
+  <div class="hint" style="margin-top:6px">Checks codes 1000–4FFF and F400–F4FF (~16,600) on the selected module. About 10 min each, parked, ignition on. Pause/resume is safe. Watching reads every module you've discovered.</div>
 
   <label>2 · Watch <span id="scWatchStat">–</span></label>
   <div class="row"><button id="scWatch">Start watching</button><button id="scWatchStop">Stop</button></div>
   <div class="hint" style="margin:8px 0 4px">Tag what the car is doing — tap the current drive mode:</div>
   <div class="row" id="scModes"></div>
+  <div class="hint" style="margin:8px 0 4px">…and the gearbox: D, S, or Manual (and the gear, if you know it):</div>
+  <div class="row" id="scDsg"></div>
+  <div class="row" style="margin-top:8px"><input type="text" id="scGear" inputmode="numeric" placeholder="Gear (1-6)"><button id="scGearLog" style="flex:0 0 auto">Log</button></div>
   <div class="row" style="margin-top:8px"><input type="text" id="scOil" inputmode="numeric" placeholder="Oil °F shown on cluster"><button id="scOilLog" style="flex:0 0 auto">Log</button></div>
   <div class="hint" id="scLast" style="margin-top:6px"></div>
 
@@ -400,19 +405,28 @@
 
   // ================= data code scanner (UDS 0x22 on engine computer 7E0) =================
   const SC = (() => { try { return JSON.parse(localStorage.getItem('sc_state')) || {}; } catch(e) { return {}; } })();
-  SC.found = SC.found || {};       // did -> first reply hex
-  SC.next = SC.next || 0;          // index into RANGE for resume
-  SC.snaps = SC.snaps || [];       // [{t, mode, oilF, cool, v:{did:hex}}]
+  // per-module discovery; old single-module data migrates to the engine computer
+  const MODS = { '7E0': { name:'Engine', rx:'7E8' }, '7E1': { name:'Transmission (DSG)', rx:'7E9' } };
+  SC.mods = SC.mods || { '7E0': { found: SC.found || {}, next: SC.next || 0 } };
+  for (const m in MODS) SC.mods[m] = SC.mods[m] || { found: {}, next: 0 };
+  delete SC.found; delete SC.next;
+  SC.snaps = SC.snaps || [];       // [{t, mode, dsg, gear, oilF, coolF, v:{'7E0:DID':hex}}]
+  let scMod = '7E0';
   const scSave = () => { try { localStorage.setItem('sc_state', JSON.stringify(SC)); } catch(e) { log('scanner: storage full?', e.message); } };
   const RANGE = []; for (let d = 0x1000; d <= 0x4FFF; d++) RANGE.push(d); for (let d = 0xF400; d <= 0xF4FF; d++) RANGE.push(d);
   const h4 = d => d.toString(16).toUpperCase().padStart(4, '0');
-  let scRun = false, scMode = '', scOilPending = null, wakeL = null;
+  let scRun = false, scMode = '', scDsg = '', scGearPending = null, scOilPending = null, wakeL = null;
   const keepAwake = async () => { try { wakeL = wakeL || await navigator.wakeLock.request('screen'); } catch(e) {} };
 
   async function scInit() {
     if (!obdW) throw new Error('Connect the OBD adapter first');
     obdLive = false; await new Promise(r => setTimeout(r, 300));
-    for (const c of ['ATSP6','ATSH7E0','ATCRA7E8','ATAT2']) await obdCmd(c, 3000).catch(() => {});
+    for (const c of ['ATSP6','ATAT2']) await obdCmd(c, 3000).catch(() => {});
+  }
+  let scCurMod = null;
+  async function scSelect(mod) {   // point requests at one module and only listen to its replies
+    if (scCurMod === mod) return; scCurMod = mod;
+    await obdCmd('ATSH' + mod, 3000).catch(() => {}); await obdCmd('ATCRA' + MODS[mod].rx, 3000).catch(() => {});
   }
   // returns hex string of data bytes, or null if unsupported / no answer
   async function scRead(did) {
@@ -424,29 +438,38 @@
     return i < 0 ? null : c.slice(i + 6);
   }
   function scStat() {
-    const n = Object.keys(SC.found).length;
-    $('scDiscStat').textContent = `${Math.min(SC.next, RANGE.length)}/${RANGE.length} checked · ${n} found`;
-    $('scBar').style.width = (SC.next / RANGE.length * 100) + '%';
+    const M = SC.mods[scMod], n = Object.keys(M.found).length;
+    $('scDiscStat').textContent = `${MODS[scMod].name}: ${Math.min(M.next, RANGE.length)}/${RANGE.length} checked · ${n} found`;
+    $('scBar').style.width = (M.next / RANGE.length * 100) + '%';
     $('scWatchStat').textContent = `${SC.snaps.length} snapshots`;
   }
   $('scDisc').onclick = async () => {
     if (scRun) return;
     try { await scInit(); } catch(e) { log('scanner:', e.message); return; }
-    scRun = true; keepAwake(); log('scanner: discovery from', h4(RANGE[SC.next] || 0));
+    const mod = scMod, M = SC.mods[mod]; await scSelect(mod);
+    scRun = true; keepAwake(); log('scanner:', MODS[mod].name, 'discovery from', h4(RANGE[M.next] || 0));
     const t0 = performance.now(); let done = 0;
-    while (scRun && SC.next < RANGE.length) {
-      const did = h4(RANGE[SC.next]);
+    while (scRun && M.next < RANGE.length) {
+      const did = h4(RANGE[M.next]);
       const v = await scRead(did);
-      if (v != null) { SC.found[did] = v; log('found', did, v); }
-      SC.next++; done++;
+      if (v != null) { M.found[did] = v; log('found', mod, did, v); }
+      M.next++; done++;
       if (done % 25 === 0) { scSave(); scStat(); const rate = done / ((performance.now() - t0) / 1000);
-        $('scDiscStat').textContent += ` · ${rate.toFixed(0)}/s · ~${Math.ceil((RANGE.length - SC.next) / rate / 60)} min left`; }
+        $('scDiscStat').textContent += ` · ${rate.toFixed(0)}/s · ~${Math.ceil((RANGE.length - M.next) / rate / 60)} min left`; }
     }
     scRun = false; scSave(); scStat();
-    if (SC.next >= RANGE.length) log('scanner: discovery complete,', Object.keys(SC.found).length, 'codes answered');
+    if (M.next >= RANGE.length) log('scanner:', MODS[mod].name, 'discovery complete,', Object.keys(M.found).length, 'codes answered');
   };
   $('scDiscStop').onclick = () => { scRun = false; };
 
+  for (const m in MODS) { const b = document.createElement('button'); b.textContent = MODS[m].name; b.style.padding = '10px 4px'; b.style.fontSize = '14px';
+    b.onclick = () => { if (scRun) return; scMod = m; [...$('scMods').children].forEach(x => x.className = x.textContent === MODS[m].name ? 'on' : ''); scStat(); };
+    $('scMods').appendChild(b); }
+  $('scMods').children[0].className = 'on';
+  for (const d of ['D','S','Manual']) { const b = document.createElement('button'); b.textContent = d; b.style.padding = '10px 4px'; b.style.fontSize = '14px';
+    b.onclick = () => { scDsg = d; [...$('scDsg').children].forEach(x => x.className = x.textContent === d ? 'on' : ''); log('gearbox tag:', d); };
+    $('scDsg').appendChild(b); }
+  $('scGearLog').onclick = () => { const v = parseInt($('scGear').value); if (!isNaN(v)) { scGearPending = v; log('gear tag:', v, '(attached to next snapshot)'); $('scGear').value = ''; } };
   const MODES = ['Comfort','Normal','Race','Individual'];
   for (const m of MODES) { const b = document.createElement('button'); b.textContent = m; b.style.padding = '10px 4px'; b.style.fontSize = '14px';
     b.onclick = () => { scMode = m; [...$('scModes').children].forEach(x => x.className = x.textContent === m ? 'on' : ''); log('mode tag:', m); };
@@ -455,24 +478,26 @@
 
   $('scWatch').onclick = async () => {
     if (scRun) return;
-    const dids = Object.keys(SC.found);
-    if (!dids.length) { log('scanner: run discovery first'); return; }
+    const plan = Object.keys(MODS).map(m => [m, Object.keys(SC.mods[m].found)]).filter(([, d]) => d.length);
+    const total = plan.reduce((a, [, d]) => a + d.length, 0);
+    if (!total) { log('scanner: run discovery first'); return; }
     try { await scInit(); } catch(e) { log('scanner:', e.message); return; }
-    scRun = true; keepAwake(); log('scanner: watching', dids.length, 'codes');
+    scRun = true; keepAwake(); log('scanner: watching', total, 'codes on', plan.map(([m]) => MODS[m].name).join(' + '));
     while (scRun) {
       const t0 = performance.now(), v = {};
-      for (const did of dids) { if (!scRun) break; const x = await scRead(did); if (x != null) v[did] = x; }
-      if (!scRun && Object.keys(v).length < dids.length / 2) break;
+      for (const [m, dids] of plan) { await scSelect(m); for (const did of dids) { if (!scRun) break; const x = await scRead(did); if (x != null) v[m + ':' + did] = x; } }
+      if (!scRun && Object.keys(v).length < total / 2) break;
+      await scSelect('7E0');
       const cr = await obdCmd('01051', 1500).catch(() => ''); const cm = cr.replace(/\s+/g,'').match(/4105([0-9A-F]{2})/i);
-      const snap = { t: new Date().toISOString(), mode: scMode, oilF: scOilPending, coolF: cm ? Math.round((parseInt(cm[1],16) - 40) * 9/5 + 32) : null, v };
-      SC.snaps.push(snap); scOilPending = null; scSave(); scStat();
-      $('scLast').textContent = `Last sweep ${((performance.now() - t0) / 1000).toFixed(1)} s · ${snap.mode || 'no mode'}${snap.oilF != null ? ' · oil ' + snap.oilF + '°F' : ''} · coolant ${snap.coolF ?? '–'}°F`;
+      const snap = { t: new Date().toISOString(), mode: scMode, dsg: scDsg, gear: scGearPending, oilF: scOilPending, coolF: cm ? Math.round((parseInt(cm[1],16) - 40) * 9/5 + 32) : null, v };
+      SC.snaps.push(snap); scOilPending = null; scGearPending = null; scSave(); scStat();
+      $('scLast').textContent = `Last sweep ${((performance.now() - t0) / 1000).toFixed(1)} s · ${snap.mode || 'no mode'} · ${snap.dsg || 'no gearbox tag'}${snap.gear != null ? ' · gear ' + snap.gear : ''}${snap.oilF != null ? ' · oil ' + snap.oilF + '°F' : ''} · coolant ${snap.coolF ?? '–'}°F`;
     }
     scRun = false; scSave(); scStat();
   };
   $('scWatchStop').onclick = () => { scRun = false; };
 
-  function scBlob() { return JSON.stringify({ car: 'Mk7 Golf R', ecu: '7E0', range: '1000-4FFF,F400-F4FF', found: SC.found, snaps: SC.snaps }); }
+  function scBlob() { return JSON.stringify({ car: 'Mk7 Golf R', modules: MODS, range: '1000-4FFF,F400-F4FF', found: Object.fromEntries(Object.keys(MODS).map(m => [m, SC.mods[m].found])), snaps: SC.snaps }); }
   $('scExport').onclick = () => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([scBlob()], { type:'application/json' }));
     a.download = 'golf-r-scan-' + new Date().toISOString().slice(0,16).replace(/[:T]/g,'-') + '.json'; document.body.appendChild(a); a.click(); a.remove();
@@ -480,7 +505,7 @@
   };
   $('scCopy').onclick = async () => { try { await navigator.clipboard.writeText(scBlob()); log('scanner: copied'); } catch(e) { log('copy failed — use Download'); } };
   $('scClear').onclick = () => { if (scRun) return; if (!confirm('Clear all scanner data (discovered codes and snapshots)?')) return;
-    SC.found = {}; SC.next = 0; SC.snaps = []; scSave(); scStat(); log('scanner: cleared'); };
+    for (const m in MODS) SC.mods[m] = { found: {}, next: 0 }; SC.snaps = []; scSave(); scStat(); log('scanner: cleared'); };
   scStat();
 
   render();
