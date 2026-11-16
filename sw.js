@@ -1,5 +1,5 @@
 // DriveDash offline support: network first (so updates show up), cache fallback (so it opens with no signal).
-const CACHE = 'drivedash-v1';
+const CACHE = 'bandersnatch-v2';
 const CORE = ['drive.html', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(self.clients.claim()); });

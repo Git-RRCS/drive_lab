@@ -1,6 +1,6 @@
 {
- "name": "DriveDash",
- "short_name": "DriveDash",
+ "name": "Bandersnatch",
+ "short_name": "Bandersnatch",
  "start_url": "drive.html",
  "scope": "./",
  "display": "standalone",
@@ -20,5 +20,6 @@
    "type": "image/png",
    "purpose": "any maskable"
   }
- ]
+ ],
+ "id": "drive.html"
 }

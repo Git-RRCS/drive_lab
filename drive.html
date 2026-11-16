@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#06050b">
 <meta name="mobile-web-app-capable" content="yes">
-<title>DriveDash</title>
+<title>Bandersnatch</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -14,9 +14,9 @@
 <style>
   /* Outrun / 80s digital cluster. Aqua = readouts, magenta = frames/accents, amber = caution, red = alarm. */
   :root { --bg:#06050b; --card:#0b0916; --card2:#0e0b1c; --line:#241c3d; --text:#e9e6ff; --dim:#7c74a8;
-          --aqua:#36f2ff; --aquaDim:rgba(54,242,255,.07); --mag:#ff2bd6; --magDim:#5b1a52; --warn:#ffb000; --bad:#ff2a2a;
-          --acc:#ff2bd6; --acc2:#ff2bd6; --ok:#36f2ff;
-          --serif:'Orbitron',ui-sans-serif,system-ui,sans-serif; --glow:drop-shadow(0 0 6px rgba(54,242,255,.55)); }
+          --ro:54,242,255; --ac:255,43,214; --aqua:rgb(var(--ro)); --aquaDim:rgba(var(--ro),.07); --mag:rgb(var(--ac)); --magDim:#5b1a52; --warn:#ffb000; --bad:#ff2a2a;
+          --acc:var(--mag); --acc2:var(--mag); --ok:var(--aqua);
+          --serif:'Orbitron',ui-sans-serif,system-ui,sans-serif; --glow:drop-shadow(0 0 6px rgba(var(--ro),.55)); }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Roboto,sans-serif; }
   body { display:flex; flex-direction:column; padding:10px 12px 14px; gap:10px; user-select:none;
@@ -24,10 +24,10 @@
   body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:20;
                 background:repeating-linear-gradient(180deg, transparent 0 2px, rgba(0,0,0,.22) 2px 3px); opacity:.35; }
   body.night { filter:brightness(.72) saturate(.9); }
-  body.night { --glow:drop-shadow(0 0 3px rgba(54,242,255,.35)); }
+  body.night { --glow:drop-shadow(0 0 3px rgba(var(--ro),.35)); }
   button { font:500 15px var(--serif); letter-spacing:.06em; color:var(--text); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; cursor:pointer; text-transform:uppercase; }
   button:active { transform:scale(.97); }
-  button.on { background:rgba(255,43,214,.16); border-color:var(--mag); color:#fff; box-shadow:0 0 10px rgba(255,43,214,.35), inset 0 0 8px rgba(255,43,214,.2); }
+  button.on { background:rgba(var(--ac),.16); border-color:var(--mag); color:#fff; box-shadow:0 0 10px rgba(var(--ac),.35), inset 0 0 8px rgba(var(--ac),.2); }
 
   /* status row */
   .top { display:flex; align-items:center; gap:8px; }
@@ -36,7 +36,7 @@
   .dot.ok { background:var(--aqua); box-shadow:0 0 6px var(--aqua); } .dot.wait { background:var(--warn); }
   .top .spacer { flex:1; }
   .top button { padding:8px 14px; font-size:12px; }
-  #btnConnect { border-color:var(--mag); color:#fff; box-shadow:0 0 10px rgba(255,43,214,.3); }
+  #btnConnect { border-color:var(--mag); color:#fff; box-shadow:0 0 10px rgba(var(--ac),.3); }
   #btnConnect.hidden { display:none; }
 
   /* seven-segment digits */
@@ -47,29 +47,29 @@
 
   /* hero cluster */
   .hero { position:relative; background:linear-gradient(180deg,#0c0a1a 0%,#07060f 100%); border:1px solid var(--line); border-radius:14px; padding:14px 16px 14px; text-align:center;
-          box-shadow:inset 0 0 0 1px rgba(255,43,214,.08), inset 0 30px 60px -40px rgba(255,43,214,.25); overflow:hidden; }
+          box-shadow:inset 0 0 0 1px rgba(var(--ac),.08), inset 0 30px 60px -40px rgba(var(--ac),.25); overflow:hidden; }
   .hero::before { content:''; position:absolute; left:0; right:0; top:0; height:40%; pointer-events:none;
                   background:linear-gradient(180deg, rgba(255,255,255,.035), transparent); }
   .lbl { font:500 11px var(--serif); letter-spacing:.22em; color:var(--dim); text-transform:uppercase; }
   .lbl b { color:var(--mag); font-weight:500; }
   .tach { display:flex; align-items:flex-end; gap:2px; height:clamp(46px, 9vh, 84px); margin:8px 0 4px; }
-  .tach i { flex:1; background:rgba(54,242,255,.07); border-radius:1px; }
+  .tach i { flex:1; background:rgba(var(--ro),.07); border-radius:1px; }
   .tach i.z1 { background:rgba(255,176,0,.10); } .tach i.z2 { background:rgba(255,42,42,.14); }
-  .tach i.lit { background:var(--aqua); box-shadow:0 0 6px rgba(54,242,255,.6); }
+  .tach i.lit { background:var(--aqua); box-shadow:0 0 6px rgba(var(--ro),.6); }
   .tach i.lit.z1 { background:var(--warn); box-shadow:0 0 6px rgba(255,176,0,.6); }
   .tach i.lit.z2 { background:var(--bad); box-shadow:0 0 8px rgba(255,42,42,.8); }
   .tach.over i.lit { animation:blink .16s steps(1) infinite; }
   .tachscale { display:flex; justify-content:space-between; font:500 9px var(--serif); color:var(--dim); letter-spacing:.1em; }
   .val { margin:clamp(10px,3vh,34px) auto 10px; width:min(98%, 560px); }
   .sbar { display:flex; gap:2px; height:clamp(14px, 2.4vh, 22px); margin:8px 0 4px; }
-  .sbar i { flex:1; background:rgba(54,242,255,.07); border-radius:1px; }
-  .sbar i.hi { background:rgba(255,43,214,.10); }
-  .sbar i.lit { background:var(--aqua); box-shadow:0 0 5px rgba(54,242,255,.6); }
-  .sbar i.lit.hi { background:var(--mag); box-shadow:0 0 6px rgba(255,43,214,.7); }
+  .sbar i { flex:1; background:rgba(var(--ro),.07); border-radius:1px; }
+  .sbar i.hi { background:rgba(var(--ac),.10); }
+  .sbar i.lit { background:var(--aqua); box-shadow:0 0 5px rgba(var(--ro),.6); }
+  .sbar i.lit.hi { background:var(--mag); box-shadow:0 0 6px rgba(var(--ac),.7); }
   .sbar i.pk { background:#fff; box-shadow:0 0 6px #fff; }
   .scale { display:flex; justify-content:space-between; font:500 9px var(--serif); color:var(--dim); letter-spacing:.1em; }
   .peakline { display:flex; justify-content:center; align-items:center; gap:14px; margin-top:clamp(10px,2.5vh,26px); }
-  .peakline .seg { width:clamp(86px, 28vw, 130px); color:var(--mag); filter:drop-shadow(0 0 5px rgba(255,43,214,.55)); }
+  .peakline .seg { width:clamp(86px, 28vw, 130px); color:var(--mag); filter:drop-shadow(0 0 5px rgba(var(--ac),.55)); }
   .peakline .seg .gh { fill:var(--mag); }
   #hz { font:500 10px var(--serif); color:var(--dim); letter-spacing:.12em; }
 
@@ -104,7 +104,55 @@
   #tabLights .motor button { padding:18px 0; }
   .tabs { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
   .tabs button { padding:13px; font-size:13px; letter-spacing:.18em; }
-  .tabs button.cur { border-color:var(--mag); color:#fff; background:rgba(255,43,214,.12); box-shadow:0 0 12px rgba(255,43,214,.35), inset 0 -2px 0 var(--mag); }
+  .tabs button.cur { border-color:var(--mag); color:#fff; background:rgba(var(--ac),.12); box-shadow:0 0 12px rgba(var(--ac),.35), inset 0 -2px 0 var(--mag); }
+
+  /* ===== Uno theme: red-orange LCD, plain labels, vertical bars, car outline ===== */
+  body.uno { --bg:#040202; --card:#0a0504; --line:#2b1410; --text:#f3e6e1; --dim:#8a6f68;
+             --ro:255,62,28; --ac:255,128,48; --warn:#ffc400; --bad:#ffffff;
+             --serif:'Helvetica Neue',Arial,system-ui,sans-serif;
+             --aqua:rgb(var(--ro)); --aquaDim:rgba(var(--ro),.07); --mag:rgb(var(--ac)); --acc:var(--mag); --acc2:var(--mag); --ok:var(--aqua); }
+  body.uno::after { opacity:.18; }
+  body.uno .hero { background:linear-gradient(180deg,#0d0605 0%,#060303 100%); box-shadow:inset 0 0 0 1px rgba(var(--ro),.06), inset 0 30px 60px -40px rgba(var(--ro),.18); }
+  body.uno .seg svg { transform:skewX(-4deg); }
+  body.uno .lbl, body.uno .g .l, body.uno .tachscale, body.uno .scale { letter-spacing:.08em; }
+  body.uno .lbl b { color:rgb(var(--ro)); }
+  body.uno .sbar i.hi { background:rgba(var(--ro),.10); }
+  body.uno .sbar i.lit.hi { background:rgb(var(--ro)); box-shadow:0 0 6px rgba(var(--ro),.7); }
+  body.uno .tach i.z1 { background:rgba(255,196,0,.10); }
+  body.uno .tach i.z2 { background:rgba(255,255,255,.10); }
+  body.uno .tach i.lit.z1 { background:var(--warn); }
+  body.uno .tach i.lit.z2 { background:#fff; box-shadow:0 0 8px rgba(255,255,255,.8); }
+  body.uno .g.crit { background:rgba(var(--ro),.85); border-color:#fff; } body.uno .g.crit .v { color:#fff; }
+  body.uno .alarm { background:rgba(40,0,0,.95); }
+  body.uno .peakline .seg { color:rgb(var(--ro)); filter:drop-shadow(0 0 5px rgba(var(--ro),.55)); }
+  body.uno .peakline .seg .gh { fill:rgb(var(--ro)); }
+  body.uno .tabs button.cur { box-shadow:0 0 10px rgba(var(--ac),.3), inset 0 -2px 0 rgb(var(--ac)); }
+
+  .sigil { position:absolute; left:50%; top:50%; width:min(70%,380px); transform:translate(-50%,-52%); pointer-events:none; opacity:.07; }
+  .sigil svg { width:100%; height:auto; display:block; }
+  .sigil .tri, .sigil .sg { fill:none; stroke-width:1.2; stroke-linejoin:round; stroke-linecap:round; }
+  .sigil .tri { stroke:rgb(var(--ro)); } .sigil .sg { stroke:rgb(var(--ac)); }
+  body.night .sigil { opacity:.04; }
+  .hero > *:not(.sigil) { position:relative; }
+  .car { display:none; margin:clamp(8px,2vh,20px) auto 0; width:min(92%,440px); position:relative; }
+  body.uno .car { display:block; }
+  .car svg { width:100%; height:auto; display:block; }
+  .car .body { fill:none; stroke:rgba(var(--ro),.55); stroke-width:1.4; stroke-linejoin:round; transition:stroke .2s; }
+  .car .trim { fill:none; stroke:rgba(var(--ro),.25); stroke-width:1; }
+  .car.warn .body { stroke:var(--warn); } .car.crit .body { stroke:#fff; animation:blink .3s steps(1) infinite; }
+  .car .lamp rect { fill:rgba(var(--ro),.08); stroke:rgba(var(--ro),.35); stroke-width:.8; }
+  .car .lamp text { font:600 7px 'Helvetica Neue',Arial,sans-serif; fill:rgba(var(--ro),.35); letter-spacing:.06em; }
+  .car .lamp.on rect { fill:rgb(var(--ro)); stroke:rgb(var(--ro)); filter:drop-shadow(0 0 4px rgba(var(--ro),.9)); }
+  .car .lamp.on text { fill:#1a0603; }
+  .car .ico { fill:rgba(var(--ro),.18); } .car .ico.on { fill:rgb(var(--ro)); }
+
+  .vb { display:none; flex-direction:column-reverse; gap:2px; width:9px; height:44px; position:absolute; right:7px; bottom:10px; }
+  body.uno .vb { display:flex; }
+  body.uno .g .v { width:78%; }
+  .vb i { flex:1; background:rgba(var(--ro),.09); border-radius:1px; }
+  .vb i.lit { background:rgb(var(--ro)); box-shadow:0 0 4px rgba(var(--ro),.7); }
+  .vb i.top { background:rgba(255,255,255,.10); } .vb i.top.lit { background:#fff; }
+  #themeBtn { background:none; border:none; padding:0; font:500 9px var(--serif); letter-spacing:.1em; color:var(--dim); text-decoration:underline; }
   @keyframes blink { 50% { opacity:.15; } }
   .alarm { position:fixed; inset:0; background:rgba(90,0,8,.94); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:30; text-align:center; padding:20px; }
   .alarm.show { display:flex; }
@@ -120,7 +168,7 @@
   .tsec h3 { margin:0 0 8px; font:700 11px var(--serif); color:var(--mag); letter-spacing:.2em; text-transform:uppercase; display:flex; justify-content:space-between; align-items:baseline; }
   .tsec h3 span { font:500 9px var(--serif); color:var(--dim); letter-spacing:.06em; text-transform:none; }
   .pair { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center; }
-  .pair .v, .cyl .v { font:700 24px var(--serif); color:var(--aqua); text-shadow:0 0 8px rgba(54,242,255,.45); font-variant-numeric:tabular-nums; }
+  .pair .v, .cyl .v { font:700 24px var(--serif); color:var(--aqua); text-shadow:0 0 8px rgba(var(--ro),.45); font-variant-numeric:tabular-nums; }
   .pair .l { font:500 9px var(--serif); color:var(--dim); letter-spacing:.12em; text-transform:uppercase; }
   .cyl { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; text-align:center; }
   .cyl > div { background:#080611; border:1px solid var(--line); border-radius:8px; padding:8px 2px; }
@@ -146,6 +194,7 @@
 
 <section class="tab" id="tabGauges">
 <div class="hero" id="hero">
+  <div class="sigil" aria-hidden="true"><svg viewBox="0 0 100 100"><path class="tri" d="M6,8 L94,8 L50,92 Z"/><path class="sg" d="M66.0,21.0 L50.0,37.0 L34.0,21.0 L50.0,21.0 L50.0,53.0 L66.0,21.0 L34.0,37.0 L34.0,53.0"/><circle class="sg" cx="66.0" cy="21.0" r="3.6"/><path class="sg" d="M28.0,53.0 L40.0,53.0"/></svg></div>
   <div class="lbl" style="display:flex;justify-content:space-between"><span>RPM <b>×1000</b></span><span id="rpmLimitLbl"></span></div>
   <div class="tach" id="tach"></div>
   <div class="tachscale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span></div>
@@ -154,13 +203,22 @@
   <div class="sbar" id="sbar"></div>
   <div class="scale"><span>0</span><span>10</span><span>20</span><span>30</span></div>
   <div class="peakline"><span class="lbl">Peak</span><span class="seg" id="peakVal"></span><span id="hz"></span></div>
+  <div class="car" id="car"><svg viewBox="0 0 200 72">
+    <path class="body" d="M8,54 L8,45 Q9,39 21,37 L57,32 L82,14 Q86,11 93,11 L147,11 Q155,11 161,16 L179,30 L185,33 Q189,36 189,44 L189,54 L171,54 A16,16 0 0 0 139,54 L61,54 A16,16 0 0 0 29,54 Z"/>
+    <path class="trim" d="M63,31 L86,15 L117,15 L117,31 Z M121,15 L145,15 Q150,15 154,18 L166,30 L121,30 Z M118,32 L118,52 M57,40 L182,40"/>
+    <circle class="body" cx="45" cy="54" r="11.5"/><circle class="body" cx="155" cy="54" r="11.5"/>
+    <circle class="trim" cx="45" cy="54" r="5"/><circle class="trim" cx="155" cy="54" r="5"/>
+    <g class="lamp" id="lampA"><rect x="64" y="42" width="35" height="9" rx="1.5"/><text x="81.5" y="48.6" text-anchor="middle" id="lampAt">15 PSI</text></g>
+    <g class="lamp" id="lampB"><rect x="102" y="42" width="35" height="9" rx="1.5"/><text x="119.5" y="48.6" text-anchor="middle" id="lampBt">22 PSI</text></g>
+    <circle class="ico" cx="184" cy="57" r="1.6"/><circle class="ico" cx="179" cy="57" r="1.6"/>
+  </svg></div>
 </div>
 
 <div class="gauges">
-  <div class="g" id="gRpm"><div class="l">RPM</div><div class="v seg" id="rpm"></div><div class="sub" id="rpmSub"></div></div>
-  <div class="g" id="gCool"><div class="l">Cool °F</div><div class="v seg" id="cool"></div><div class="sub" id="coolSub"></div></div>
-  <div class="g" id="gIat"><div class="l">Intake °F</div><div class="v seg" id="iat"></div><div class="sub"></div></div>
-  <div class="g" id="gOil"><div class="l">Oil °F</div><div class="v seg" id="oil"></div><div class="sub" id="oilSub"></div></div>
+  <div class="g" id="gRpm"><div class="vb" data-vb="gRpm"></div><div class="l">RPM</div><div class="v seg" id="rpm"></div><div class="sub" id="rpmSub"></div></div>
+  <div class="g" id="gCool"><div class="vb" data-vb="gCool"></div><div class="l">Cool °F</div><div class="v seg" id="cool"></div><div class="sub" id="coolSub"></div></div>
+  <div class="g" id="gIat"><div class="vb" data-vb="gIat"></div><div class="l">Intake °F</div><div class="v seg" id="iat"></div><div class="sub"></div></div>
+  <div class="g" id="gOil"><div class="vb" data-vb="gOil"></div><div class="l">Oil °F</div><div class="v seg" id="oil"></div><div class="sub" id="oilSub"></div></div>
 </div>
 </section>
 
@@ -191,7 +249,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v18 · tap peak: reset · hold boost: vacuum</span><a href="./">Lab</a></div>
+<div class="foot"><span id="foot">v20 · tap peak: reset · hold boost: vacuum</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="toast" id="toast"></div>
@@ -402,11 +460,11 @@
           const cb = await readDid('202A').catch(() => null);
           if (cb) { tv['202A'] = tuneDecode('202A', cb); o['0B'] = [Math.round(tv['202A'])]; o._hi = tv['202A']; }
         }
-        if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; boostReact(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
-        if (o['0C']) setSeg('rpm', String(Math.round((o['0C'][0]*256 + o['0C'][1]) / 40) * 10), 4);
-        if (o['05']) { const v = F(o['05'][0]); setSeg('cool', String(v), 3); temps.cool = v; }
-        if (o['0F']) { const v = F(o['0F'][0]); setSeg('iat', String(v), 3); temps.iat = v; }
-        if (o['5C']) { const v = F(o['5C'][0]); setSeg('oil', String(v), 3); temps.oil = v; }
+        if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; boostReact(psi); paintCar(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
+        if (o['0C']) { const r = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4); setSeg('rpm', String(Math.round(r / 10) * 10), 4); setVB('gRpm', r); }
+        if (o['05']) { const v = F(o['05'][0]); setSeg('cool', String(v), 3); temps.cool = v; setVB('gCool', v); }
+        if (o['0F']) { const v = F(o['0F'][0]); setSeg('iat', String(v), 3); temps.iat = v; setVB('gIat', v); }
+        if (o['5C']) { const v = F(o['5C'][0]); setSeg('oil', String(v), 3); temps.oil = v; setVB('gOil', v); }
         evaluate(o['0C'] ? Math.round((o['0C'][0]*256 + o['0C'][1]) / 4) : null);
         n++;
         const dt = performance.now() - t0; if (dt > 2000) { $('hz').textContent = (cnt * 1000 / dt).toFixed(0) + ' Hz'; cnt = 0; t0 = performance.now(); }
@@ -701,6 +759,34 @@
   }
   $('tbG').onclick = () => showTab('g'); $('tbT').onclick = () => showTab('t'); $('tbL').onclick = () => showTab('l');
   showTab(store.get('dd_tab', 'g'));
+
+
+  // ================= themes, car outline, vertical bars =================
+  const VB_N = 10;
+  const VB_RANGE = { gRpm:[0,7000], gCool:[100,250], gIat:[30,160], gOil:[100,280] };
+  document.querySelectorAll('.vb').forEach(vb => { for (let i = 0; i < VB_N; i++) { const e = document.createElement('i'); if (i >= VB_N - 2) e.className = 'top'; vb.appendChild(e); } });
+  const vbLast = {};
+  function setVB(gid, val) {
+    if (val == null) return;
+    const [lo, hi] = VB_RANGE[gid]; const n = Math.max(0, Math.min(VB_N, Math.round((val - lo) / (hi - lo) * VB_N)));
+    if (vbLast[gid] === n) return; vbLast[gid] = n;
+    [...document.querySelector(`[data-vb="${gid}"]`).children].forEach((e, i) => e.classList.toggle('lit', i < n));
+  }
+  let LAMP_A = 15, LAMP_B = 22;
+  function paintCar(psi) {
+    $('lampA').classList.toggle('on', psi >= LAMP_A); $('lampB').classList.toggle('on', psi >= LAMP_B);
+    let worst = 0; for (const k in st8) worst = Math.max(worst, st8[k].level);
+    $('car').className = 'car' + (worst === 2 ? ' crit' : worst === 1 ? ' warn' : '');
+  }
+  const THEMES = ['outrun', 'uno'];
+  let theme = store.get('dd_theme', 'outrun');
+  function applyTheme() {
+    THEMES.forEach(t => document.body.classList.toggle(t, t === theme));
+    $('themeBtn').textContent = 'Theme: ' + (theme === 'uno' ? 'Uno' : 'Outrun');
+    document.querySelector('meta[name=theme-color]').content = theme === 'uno' ? '#040202' : '#06050b';
+  }
+  $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); toast('Theme: ' + (theme === 'uno' ? 'Uno' : 'Outrun')); };
+  applyTheme();
 
   function nightCheck() { const h = new Date().getHours(); document.body.classList.toggle('night', h >= 19 || h < 7); }
   nightCheck(); setInterval(nightCheck, 60000);
