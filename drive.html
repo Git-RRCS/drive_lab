@@ -154,7 +154,12 @@
   .egg.p1 { background:rgba(4,2,3,.55); }
   .egg.show { display:block; }
   .eggimg { position:absolute; left:50%; top:50%; width:min(100vw, 72vh); transform:translate(-50%,-50%); display:block; image-rendering:auto; }
-  .egg.p3 .eggimg { animation:egglitch .7s steps(1) 1; }
+  .egg.p3 .eggimg, .egg.p3 .eggtint { animation:egglitch .7s steps(1) 1; }
+  /* theme tint: the animation's own alpha masks a theme-colored layer; the original stays faintly underneath for the red eye */
+  .eggimg { opacity:.38; }
+  .eggtint { position:absolute; left:50%; top:50%; width:min(100vw, 72vh); aspect-ratio:1; transform:translate(-50%,-50%);
+             background:rgb(var(--ro)); -webkit-mask-size:100% 100%; mask-size:100% 100%; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+             filter:drop-shadow(0 0 4px rgba(var(--ro),.85)) drop-shadow(0 0 12px rgba(var(--ro),.4)); }
   .eggstatic { position:absolute; inset:0; pointer-events:none; opacity:0;
                background:repeating-linear-gradient(180deg, rgba(255,255,255,.07) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(var(--ro),.06) 0 2px, transparent 2px 5px); }
   .egg.noise .eggstatic { animation:static .5s steps(4) 1; }
@@ -309,10 +314,10 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v29 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v30 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
-<div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""></div>
+<div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -916,7 +921,8 @@
     if (eggOn) return; eggOn = true;
     const e = $('egg'), at = (ms, fn) => eggTimers.push(setTimeout(fn, ms));
     e.className = 'egg show'; void e.offsetWidth;
-    $('eggImg').src = 'summon.webp?t=' + Date.now();       // restart the boot animation from frame one
+    const src = 'summon.webp?t=' + Date.now();              // restart the boot animation from frame one
+    $('eggImg').src = src; $('eggTint').style.webkitMaskImage = $('eggTint').style.maskImage = `url(${src})`;
     e.classList.add('noise');
     at(120, () => e.classList.add('p1'));
     at(500, () => e.classList.remove('noise'));
