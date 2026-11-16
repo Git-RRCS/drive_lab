@@ -323,12 +323,13 @@
     <div class="pair"><div><div class="v" id="tLa">–</div><div class="l">Actual</div></div><div><div class="v" id="tLt">–</div><div class="l">Target</div></div><div><div class="v" id="tLd">–</div><div class="l">Max lean</div></div></div></div>
   <div class="tsec"><h3>Wastegate <span>% · actual · target</span></h3>
     <div class="pair"><div><div class="v" id="tWa">–</div><div class="l">Actual</div></div><div><div class="v" id="tWt">–</div><div class="l">Target</div></div><div><button id="tReset" style="width:100%;font-size:13px;padding:10px 4px">Reset session</button></div></div></div>
-  <div class="tsec"><h3>Pulls <span>auto-recorded over 8 psi · newest first</span></h3><div id="tPulls" class="pulls"><div class="hl">No pulls yet</div></div></div>
+  <div class="tsec"><h3>Pulls <span>auto-recorded over 8 psi · newest first</span></h3><div id="tPulls" class="pulls"><div class="hl">No pulls yet</div></div>
+    <div class="cues" style="margin-top:10px"><button id="exPulls">Export pulls</button><button id="exLog">Export drive log</button></div><div class="hl" id="logStat" style="margin-top:6px;text-align:center"></div></div>
   <div class="foot" style="justify-content:center"><span id="tNote">VW engine data · highs/lows kept until reset</span></div>
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v36 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v37 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -540,7 +541,7 @@
           const cb = await readDid('202A').catch(() => null);
           if (cb) { tv['202A'] = tuneDecode('202A', cb); o['0B'] = [Math.round(tv['202A'])]; o._hi = tv['202A']; }
         }
-        if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; livePsi = psi; livePsiT = Date.now(); pullTick(psi); boostReact(psi); paintLamps(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
+        if (o['0B'] && baro != null) { const d = (o._hi != null ? o._hi : o['0B'][0]) - baro; showBoost(d); const psi = d * KPA_PSI; livePsi = psi; livePsiT = Date.now(); pullTick(psi); logTick(); boostReact(psi); paintLamps(psi); if (psi > peak) { peak = psi; showPeak(); } cnt++; }
         if (o['0C']) { const r = Math.round((o['0C'][0]*256 + o['0C'][1]) / 4); liveRpm = r; setSeg('rpm', String(Math.round(r / 10) * 10), 4); setVB('gRpm', r); }
         if (o['05']) { const v = F(o['05'][0]); setSeg('cool', String(v), 3); temps.cool = v; setVB('gCool', v); }
         if (o['0F']) { const v = F(o['0F'][0]); setSeg('iat', String(v), 3); temps.iat = v; setVB('gIat', v); }
@@ -689,6 +690,62 @@
   renderPulls(); renderTune();
   $('tReset').onclick = () => { tWorst = [0,0,0,0]; railMin = null; leanMax = null; ext = {}; pulls = []; saveTune(); renderPulls(); renderTune(); toast('Tune session reset'); };
   let curTab = 'g';
+
+
+  // ================= drive log (IndexedDB, 5 Hz, last 24 h) + CSV export =================
+  let db = null, logBuf = [], lastLogT = 0;
+  try {
+    const req = indexedDB.open('bandersnatch', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('log', { autoIncrement: true }).createIndex('t', 't');
+    req.onsuccess = () => { db = req.result; pruneLog(); logStatus(); };
+  } catch(e) {}
+  function pruneLog() {
+    if (!db) return; const cut = Date.now() - 24 * 3600 * 1000;
+    const tx = db.transaction('log', 'readwrite'); const idx = tx.objectStore('log').index('t');
+    idx.openCursor(IDBKeyRange.upperBound(cut)).onsuccess = e => { const c = e.target.result; if (c) { c.delete(); c.continue(); } };
+  }
+  const LOG_COLS = ['time','boost_psi','rpm','coolant_f','intake_f','oil_f','charge_kpa','charge_target_kpa','rail_bar','lambda','lambda_target','timing_c1','timing_c2','timing_c3','timing_c4','torque_lbft','wastegate_pct','wastegate_target_pct'];
+  function logTick() {
+    const now = Date.now(); if (now - lastLogT < 200 || livePsi == null) return; lastLogT = now;
+    const r = v => v == null ? null : Math.round(v * 100) / 100;
+    logBuf.push({ t: now, v: [r(livePsi), liveRpm, temps.cool, temps.iat, temps.oil, r(tv['202A']), r(tv['2029']), r(tv['F423']), r(tv['10C0']), r(tv['1456']),
+      r(tv['200A']), r(tv['200B']), r(tv['200C']), r(tv['200D']), r(tv['437C']), r(tv['39A2']), r(tv['39A3'])] });
+  }
+  setInterval(() => {
+    if (!db || !logBuf.length) return; const rows = logBuf; logBuf = [];
+    try { const st = db.transaction('log', 'readwrite').objectStore('log'); rows.forEach(x => st.add(x)); } catch(e) {}
+  }, 10000);
+  function logStatus() {
+    if (!db) { $('logStat').textContent = 'Drive log unavailable on this browser'; return; }
+    const st = db.transaction('log').objectStore('log'); st.count().onsuccess = e => {
+      const n = e.target.result + logBuf.length; $('logStat').textContent = n ? `Drive log: ${n.toLocaleString()} readings (~${Math.round(n / 300)} min) · last 24 h` : 'Drive log: records while the OBD adapter is connected';
+    };
+  }
+  setInterval(logStatus, 15000);
+  const csvCell = v => v == null ? '' : String(v);
+  async function shareCSV(name, text) {
+    const file = new File([text], name, { type: 'text/csv' });
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; } } catch(e) { if (e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+  const stamp = () => new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+  $('exPulls').onclick = () => {
+    if (!pulls.length) { toast('No pulls recorded yet'); return; }
+    const head = ['time','duration_s','rpm_start','rpm_end','peak_boost_psi','boost_vs_target_low_psi','rail_min_bar','lambda_max_lean','timing_c1','timing_c2','timing_c3','timing_c4','torque_peak_lbft','intake_max_f'];
+    const rows = pulls.slice().reverse().map(p => [p.at, p.dur.toFixed(2), p.rpm0, p.rpm1, p.pk.toFixed(2), p.diffLo != null ? p.diffLo.toFixed(2) : null, p.rail != null ? p.rail.toFixed(1) : null,
+      p.lean != null ? p.lean.toFixed(3) : null, ...p.tim.map(x => x.toFixed(2)), p.tq != null ? p.tq.toFixed(0) : null, p.iat].map(csvCell).join(','));
+    shareCSV('bandersnatch-pulls-' + stamp() + '.csv', head.join(',') + '\n' + rows.join('\n') + '\n');
+  };
+  $('exLog').onclick = () => {
+    if (!db) { toast('Drive log unavailable'); return; }
+    const out = [LOG_COLS.join(',')];
+    const emit = () => { logBuf.forEach(x => out.push([new Date(x.t).toISOString(), ...x.v].map(csvCell).join(',')));
+      if (out.length === 1) { toast('Drive log is empty'); return; }
+      shareCSV('bandersnatch-drive-' + stamp() + '.csv', out.join('\n') + '\n'); };
+    const cur = db.transaction('log').objectStore('log').openCursor();
+    cur.onsuccess = e => { const c = e.target.result; if (c) { out.push([new Date(c.value.t).toISOString(), ...c.value.v].map(csvCell).join(',')); c.continue(); } else emit(); };
+  };
 
   // ================= warnings, shift light, light cues =================
   const temps = { oil:null, cool:null, iat:null };
