@@ -145,9 +145,9 @@
   @keyframes summon { 50% { filter:brightness(1.35); } }
   /* Uno: big sigil (never smaller than v22), bars never collapse, digits sized to fit */
   body.uno #tabGauges .hero { justify-content:space-between; }
-  body.uno .val { margin:clamp(4px,1.2vh,20px) auto 4px; width:min(96%, 560px, 37vh); }
+  body.uno .val { margin:clamp(4px,1vh,18px) auto 4px; width:min(96%, 560px, 34vh); }
   body.uno .tach { height:clamp(36px, 6vh, 64px); }
-  body.uno .summon { flex:1 1 0; min-height:118px; margin-top:clamp(4px,1vh,12px); }
+  body.uno .summon { flex:1 1 0; min-height:150px; margin-top:clamp(4px,1vh,12px); }
   body.uno .summon .sig { max-height:230px; max-width:62%; }
   /* ===== easter egg: full summoning ===== */
   .egg { position:fixed; inset:0; z-index:60; background:rgba(4,2,3,.0); display:none; overflow:hidden; cursor:pointer; transition:background .35s; }
@@ -174,8 +174,9 @@
     100% { transform:translate(-50%,-50%); filter:none; opacity:1; } }
   body.eggshake .tab.active, body.eggshake .top { animation:egglitchpage .7s steps(1) 1; }
   @keyframes egglitchpage { 0% { transform:translate(-4px,1px) skewX(-3deg); filter:drop-shadow(3px 0 0 rgba(255,0,90,.6)); } 20% { transform:translate(3px,0); filter:none; } 40% { transform:translate(-2px,-1px) skewX(2deg); filter:drop-shadow(-3px 0 0 rgba(0,240,255,.5)); } 60% { transform:none; } 80% { transform:translate(1px,0); } 100% { transform:none; filter:none; } }
-  .egg.out { animation:eggout .45s ease-in forwards; }
-  @keyframes eggout { 0% { opacity:1; filter:brightness(2.5); transform:scaleY(1); } 60% { transform:scaleY(.02); filter:brightness(4); opacity:1; } 100% { transform:scaleY(0); opacity:0; } }
+  .egg.out { animation:eggout .9s ease-out forwards; }
+  @keyframes eggout { 0% { opacity:1; } 100% { opacity:0; } }
+  @media (max-height:815px) { body.uno .summon { min-height:124px; } }
   @media (max-height:790px) { .summon { min-height:44px; } .peakline { margin-top:4px; } .tach { height:40px; } .lamps { margin-top:6px; } }
   /* idle breathing so it reads as alive, not decoration */
   .summon .base { animation:breathe 6s ease-in-out infinite; }
@@ -314,7 +315,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v30 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v31 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -915,7 +916,7 @@
   function eggClose() {
     if (!eggOn) return; eggOn = false; eggTimers.forEach(clearTimeout); eggTimers = []; document.body.classList.remove('eggshake');
     const e = $('egg'); e.classList.add('out');
-    setTimeout(() => { e.className = 'egg'; }, 460);
+    setTimeout(() => { e.className = 'egg'; }, 920);
   }
   function summonEgg() {
     if (eggOn) return; eggOn = true;
