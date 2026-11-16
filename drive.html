@@ -329,7 +329,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v37 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v38 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -939,6 +939,7 @@
     retries[name] = setTimeout(attempt, 1000);
   }
 
+  let obdShowAll = false;
   async function connectAll() {
     if (!navigator.bluetooth) { toast('Needs Chrome on Android'); return; }
     // Try devices this page already has permission for (no pickers needed)
@@ -959,10 +960,15 @@
     try {
       if (!obdW && !od) {
         toast('Pick the OBD adapter');
-        const d = await navigator.bluetooth.requestDevice({ acceptAllDevices:true, optionalServices:O_SVCS });
+        // Only OBD-looking devices: the adapter's serial service, or common adapter names. Cancel once to see everything.
+        const OBD_FILTERS = [{ services:[u16(0xfff0)] }, { services:[u16(0x18f0)] }, { services:[u16(0xffe0)] },
+          ...['OBD','OBDLink','OBDII','STN','ELM','Vgate','vLink','IOS-Vlink','Android-Vlink','V-LINK','Viecar','Veepeak','KONNWEI','BlueDriver','Carista'].map(n => ({ namePrefix:n }))];
+        const opts = obdShowAll ? { acceptAllDevices:true, optionalServices:O_SVCS } : { filters:OBD_FILTERS, optionalServices:O_SVCS };
+        obdShowAll = false;
+        const d = await navigator.bluetooth.requestDevice(opts);
         store.set('dd_obdId', d.id); await connectObd(d);
       }
-    } catch(e) { if (e.name !== 'NotFoundError') toast('OBD: ' + e.message); }
+    } catch(e) { if (e.name === 'NotFoundError') { obdShowAll = true; toast('Adapter not listed? Tap Connect again to show all devices'); } else toast('OBD: ' + e.message); }
     keepAwake();
   }
 
