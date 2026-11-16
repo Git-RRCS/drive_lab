@@ -291,7 +291,7 @@
   <div class="swatches" id="swatches"></div>
   <div class="ctl"><span class="t">Bright</span><input type="range" id="bright" min="1" max="100"></div>
   <div class="motor" id="motor"></div>
-  <div class="cues"><button id="reGlow">Boost glow</button><button id="reTwinkle">Boost twinkle</button><button id="cueWarn">Warning flashes</button><button id="cueShift">Shift flash</button></div>
+  <div class="cues"><button id="reGlow">Boost glow</button><button id="reTwinkle">Boost twinkle</button><button id="cueWarn">Warning flashes</button><button id="cueShift">Shift flash</button><button id="introBtn">Startup intro</button></div>
   <div class="ctl"><span class="t">Red from <b id="rfV"></b></span><input type="range" id="redFrom" min="2" max="30" step="1"></div>
   <div class="ctl"><span class="t">Full red <b id="rtV"></b></span><input type="range" id="redFull" min="6" max="40" step="1"></div>
 </div>
@@ -312,7 +312,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v27 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v28 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggwall" id="eggWall"></div><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""></div>
@@ -983,6 +983,13 @@
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   setSeg('boostVal', '0.0', 3); setSeg('rpm', '0', 4); setSeg('cool', '', 3); setSeg('iat', '', 3); setSeg('oil', '', 3);
   paintTach(0, REDLINE, REDLINE - 500); paintBar(0);
+  // startup intro: the summoning plays on launch (tap to skip); toggle on the Lights tab
+  let intro = store.get('dd_intro', true);
+  const renderIntro = () => { $('introBtn').className = intro ? 'on' : ''; };
+  $('introBtn').onclick = () => { intro = !intro; store.set('dd_intro', intro); renderIntro(); toast('Startup intro ' + (intro ? 'on' : 'off')); };
+  renderIntro();
+  if (intro) summonEgg();
+
   renderLight(); showPeak();
 })();
 </script>
