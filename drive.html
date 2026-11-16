@@ -128,11 +128,11 @@
   body.uno .peakline .seg .gh { fill:rgb(var(--ro)); }
   body.uno .tabs button.cur { box-shadow:0 0 10px rgba(var(--ac),.3), inset 0 -2px 0 rgb(var(--ac)); }
 
-  .sigil { position:absolute; left:50%; top:50%; width:min(70%,380px); transform:translate(-50%,-52%); pointer-events:none; opacity:.07; }
+  .sigil { position:absolute; left:50%; top:50%; width:min(70%,380px); transform:translate(-50%,-52%); pointer-events:none; opacity:.16; }
   .sigil svg { width:100%; height:auto; display:block; }
-  .sigil .tri, .sigil .sg { fill:none; stroke-width:1.2; stroke-linejoin:round; stroke-linecap:round; }
+  .sigil .tri, .sigil .sg { fill:none; stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round; }
   .sigil .tri { stroke:rgb(var(--ro)); } .sigil .sg { stroke:rgb(var(--ac)); }
-  body.night .sigil { opacity:.04; }
+  body.night .sigil { opacity:.10; }
   .hero > *:not(.sigil) { position:relative; }
   .car { display:none; margin:clamp(8px,2vh,20px) auto 0; width:min(92%,440px); position:relative; }
   body.uno .car { display:block; }
@@ -249,7 +249,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v20 · tap peak: reset · hold boost: vacuum</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v21 · tap peak: reset · hold boost: vacuum</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="toast" id="toast"></div>
