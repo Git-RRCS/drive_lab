@@ -149,6 +149,44 @@
   body.uno .tach { height:clamp(36px, 6vh, 64px); }
   body.uno .summon { flex:1 1 0; min-height:118px; margin-top:clamp(4px,1vh,12px); }
   body.uno .summon .sig { max-height:230px; max-width:62%; }
+  /* ===== easter egg: full summoning ===== */
+  .egg { position:fixed; inset:0; z-index:60; background:#000; display:none; overflow:hidden; cursor:pointer; }
+  .egg.show { display:block; }
+  .eggwall { position:absolute; inset:-4%; opacity:0; transition:opacity .25s; }
+  .eggwall svg { width:100%; height:100%; display:block; }
+  .eggwall path { fill:none; stroke:rgb(var(--ro)); stroke-width:1.1; stroke-linecap:round; stroke-linejoin:round; }
+  .egg.p1 .eggwall { opacity:.22; } .egg.p3 .eggwall { opacity:.5; }
+  .eggstatic { position:absolute; inset:0; pointer-events:none; opacity:0;
+               background:repeating-linear-gradient(180deg, rgba(255,255,255,.12) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(var(--ro),.10) 0 2px, transparent 2px 5px); }
+  .egg.noise .eggstatic { animation:static .5s steps(4) 1; }
+  @keyframes static { 0% { opacity:.9; transform:translateY(0); } 25% { opacity:.3; transform:translateY(-6px); } 50% { opacity:.8; transform:translateY(4px); } 75% { opacity:.2; } 100% { opacity:0; } }
+  .eggsig { position:absolute; left:50%; top:50%; width:min(88vw, 62vh); transform:translate(-50%,-50%); overflow:visible; }
+  .eggsig .ro { stroke:rgb(var(--ro)); } .eggsig .ac { stroke:rgb(var(--ac)); }
+  .eggsig path, .eggsig circle, .eggsig line { fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  .eggsig .draw { stroke-dasharray:1; stroke-dashoffset:1; }
+  .eggsig .rune { opacity:0; transition:opacity .08s; }
+  .eggsig .rune.on { opacity:1; }
+  .egg.p2 .eggsig .d1 { transition:stroke-dashoffset .9s ease-out; stroke-dashoffset:0; }
+  .egg.p2 .eggsig .d2 { transition:stroke-dashoffset .7s ease-out .5s; stroke-dashoffset:0; }
+  .egg.p2 .eggsig .d3 { transition:stroke-dashoffset 1.0s ease-in-out 1.0s; stroke-dashoffset:0; }
+  .eggsig .eye { transform-origin:100px 104px; transform:scaleY(0); transition:transform .35s cubic-bezier(.3,1.6,.5,1) .85s; }
+  .egg.p2 .eggsig .eye { transform:scaleY(1); }
+  .eggsig .glow { filter:drop-shadow(0 0 3px rgba(var(--ac),.9)) drop-shadow(0 0 10px rgba(var(--ac),.5)); }
+  .eggsig .glowr { filter:drop-shadow(0 0 3px rgba(var(--ro),.9)) drop-shadow(0 0 10px rgba(var(--ro),.45)); }
+  .eggsig .cap2 { opacity:0; transition:opacity .25s 2s; } .egg.p2 .eggsig .cap2 { opacity:1; }
+  .eggsig .ringrot { transform-origin:100px 100px; animation:ringspin 24s linear infinite; }
+  @keyframes ringspin { to { transform:rotate(360deg); } }
+  .egg.p3 .eggsig { animation:egglitch .7s steps(1) 1; }
+  @keyframes egglitch {
+    0% { transform:translate(-50%,-50%) translate(-10px,2px) skewX(-12deg) scale(1.06); filter:brightness(2.6) drop-shadow(6px 0 0 rgba(255,0,90,.9)) drop-shadow(-6px 0 0 rgba(0,240,255,.8)); }
+    15% { transform:translate(-50%,-50%) translate(9px,-3px) skewX(8deg); filter:drop-shadow(-5px 0 0 rgba(255,0,90,.9)); opacity:.35; }
+    30% { transform:translate(-50%,-50%) scale(1.1,.94); filter:brightness(3); opacity:1; }
+    45% { transform:translate(-50%,-50%) translate(-6px,0) skewX(-6deg); filter:drop-shadow(5px 0 0 rgba(0,240,255,.9)); opacity:.5; }
+    60% { transform:translate(-50%,-50%) translate(4px,2px); filter:brightness(2); opacity:1; }
+    80% { transform:translate(-50%,-50%) skewX(4deg); filter:none; opacity:.8; }
+    100% { transform:translate(-50%,-50%); filter:none; opacity:1; } }
+  .egg.out { animation:eggout .45s ease-in forwards; }
+  @keyframes eggout { 0% { opacity:1; filter:brightness(2.5); transform:scaleY(1); } 60% { transform:scaleY(.02); filter:brightness(4); opacity:1; } 100% { transform:scaleY(0); opacity:0; } }
   @media (max-height:790px) { .summon { min-height:44px; } .peakline { margin-top:4px; } .tach { height:40px; } .lamps { margin-top:6px; } }
   /* idle breathing so it reads as alive, not decoration */
   .summon .base { animation:breathe 6s ease-in-out infinite; }
@@ -287,9 +325,10 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v25 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v26 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
+<div class="egg" id="egg"><div class="eggwall" id="eggWall"></div><div class="eggstatic"></div><svg class="eggsig" id="eggSig" viewBox="0 0 200 200"></svg></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -881,6 +920,76 @@
     };
     step();
   }
+
+  // ================= easter egg: tap the sigil =================
+  const eggGlyphs = [];
+  function buildEgg() {
+    // full-screen rune wall
+    const cols = 14, rows = 30; let g = '';
+    for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) {
+      const ch = VERSE[(c * rows + r) % VERSE.length];
+      g += `<g data-r="${r}" transform="translate(${c * 16 + 3},${r * 20 + 3})"><path d="${RUNE[ch]}"/></g>`;
+    }
+    $('eggWall').innerHTML = `<svg viewBox="0 0 ${cols * 16} ${rows * 20}" preserveAspectRatio="xMidYMid slice">${g}</svg>`;
+    $('eggWall').querySelectorAll('g').forEach(el => eggGlyphs.push({ el, d: el.firstChild.getAttribute('d'), x: el.getAttribute('transform') }));
+    // the full sigil: inscribed ring, inverted triangle, eye, name-sigil
+    const ring = 'BEWARETHEFRUMIOUSBANDERSNATCH';
+    let runes = '';
+    for (let i = 0; i < ring.length; i++) {
+      const a = -90 + i * 360 / ring.length;
+      runes += `<g class="rune" data-i="${i}" transform="rotate(${a} 100 100) translate(100 ${100 - 92}) scale(.62) translate(-5 0)"><path class="ac" stroke-width="1.6" d="${RUNE[ring[i]]}"/></g>`;
+    }
+    const P = [[66,21],[50,37],[34,21],[50,21],[50,53],[66,21],[34,37],[34,53]].map(([x, y]) => [62 + (x - 50) * .76 + 38, 104 + (y - 37) * .76]);
+    const sig = 'M' + P.map(p => p.map(v => v.toFixed(1)).join(',')).join(' L');
+    const [e1, e2] = [P[6], P[7]];
+    $('eggSig').innerHTML = `
+      <g class="glowr"><circle class="ro draw d1" pathLength="1" cx="100" cy="100" r="96" stroke-width="1.4"/><circle class="ro draw d1" pathLength="1" cx="100" cy="100" r="80" stroke-width="1"/></g>
+      <g class="ringrot glow">${runes}</g>
+      <g class="glowr"><path class="ro draw d2" pathLength="1" stroke-width="1.8" d="M30.7,60 L169.3,60 L100,180 Z"/></g>
+      <g class="eye glow"><path class="ac" stroke-width="1.6" d="M62,104 Q100,70 138,104 Q100,138 62,104 Z"/><circle class="ac" cx="100" cy="104" r="21" stroke-width="1.1" opacity=".6"/></g>
+      <g class="glow"><path class="ac draw d3" pathLength="1" stroke-width="2" d="${sig}"/>
+        <circle class="ac cap2" cx="${P[0][0].toFixed(1)}" cy="${P[0][1].toFixed(1)}" r="2.6" stroke-width="1.4"/>
+        <line class="ac cap2" x1="${(P[7][0] - 4.5).toFixed(1)}" y1="${P[7][1].toFixed(1)}" x2="${(P[7][0] + 4.5).toFixed(1)}" y2="${P[7][1].toFixed(1)}" stroke-width="1.8"/></g>`;
+  }
+  buildEgg();
+  function tearEgg(frames, rowsPer = 6) {
+    let f = 0;
+    const step = () => {
+      eggGlyphs.forEach(o => { o.el.setAttribute('transform', o.x); o.el.firstChild.setAttribute('d', o.d); });
+      if (f++ >= frames) return;
+      const shift = {}; for (let k = 0; k < rowsPer; k++) shift[Math.floor(Math.random() * 30)] = (Math.random() < .5 ? -1 : 1) * (4 + Math.random() * 18);
+      eggGlyphs.forEach(o => {
+        const r = +o.el.dataset.r;
+        if (shift[r]) o.el.setAttribute('transform', o.x.replace(/translate\(([\d.]+)/, (m, x) => `translate(${(+x + shift[r]).toFixed(1)}`));
+        if (Math.random() < .05) o.el.firstChild.setAttribute('d', RUNE[String.fromCharCode(65 + Math.floor(Math.random() * 26))]);
+      });
+      setTimeout(step, 60 + Math.random() * 40);
+    };
+    step();
+  }
+  let eggTimers = [], eggOn = false;
+  function eggClose() {
+    if (!eggOn) return; eggOn = false; eggTimers.forEach(clearTimeout); eggTimers = [];
+    const e = $('egg'); e.classList.add('out');
+    setTimeout(() => { e.className = 'egg'; }, 460);
+  }
+  function summonEgg() {
+    if (eggOn) return; eggOn = true;
+    const e = $('egg'), at = (ms, fn) => eggTimers.push(setTimeout(fn, ms));
+    e.className = 'egg show'; void e.offsetWidth;
+    e.querySelectorAll('.rune').forEach(r => r.classList.remove('on'));
+    e.classList.add('noise'); tearEgg(5, 10);
+    at(120, () => e.classList.add('p1'));
+    at(500, () => { e.classList.remove('noise'); e.classList.add('p2'); });
+    // inscription appears rune by rune around the ring
+    e.querySelectorAll('.rune').forEach((r, i) => at(600 + i * 45, () => r.classList.add('on')));
+    at(1500, () => tearEgg(3, 3));
+    at(2700, () => { e.classList.add('p3', 'noise'); tearEgg(8, 12); lightCue([255, 0, 0], 2, 260, 160); });
+    at(3500, () => e.classList.remove('p3', 'noise'));
+    at(5200, eggClose);
+  }
+  $('summon').addEventListener('click', e => { e.stopPropagation(); summonEgg(); });
+  $('egg').addEventListener('click', eggClose);
 
   // occasional glitch: every 6-12 s idle, every 1-2.5 s near full summon, gentler at night
   (function glitchLoop() {
