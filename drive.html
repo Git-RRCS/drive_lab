@@ -451,6 +451,90 @@
   body.redshift .toast { border-color:rgb(var(--ac)); background:#1c0408; border-radius:0; }
   body.redshift .alarm { background:rgba(10,0,2,.94); border:3px solid var(--bad); }
   @media (max-height:815px) { body.redshift .summon { min-height:110px; } }
+
+  /* ===== Ambient: the car's own cabin. Piano black and graphite, cool white numerals, Golf R blue used sparingly,
+     amber = caution, red = alarm only. Round cluster, perforated texture, one ambient light strip, embossed sigil. ===== */
+  .dial { display:contents; } .ring, .strip { display:none; }
+  body.ambient { --bg:#050608; --card:#101216; --line:#22262e; --text:#e8edf5; --dim:#7d8594;
+                 --ro:232,237,245; --ac:47,123,255; --lap:31,76,196; --warn:#ffae33; --bad:#ff3b30;
+                 --serif:'Inter',system-ui,sans-serif;
+                 --aqua:rgb(var(--ro)); --aquaDim:rgba(var(--ro),.06); --mag:rgb(var(--ac)); --acc:var(--mag); --acc2:var(--mag); --ok:var(--aqua);
+                 --glow:none; --perf:radial-gradient(circle, rgba(255,255,255,.045) .8px, transparent 1.3px); }
+  body.ambient { background:linear-gradient(180deg,#0b0d11 0%, #050608 40%); }
+  body.ambient::after { display:none; }
+  body.ambient button, body.ambient .chip { font:500 13px var(--serif); letter-spacing:.12em; border-radius:10px; background:#111318; border:1px solid #23272f; color:#cfd5df; }
+  body.ambient .chip { font-size:11px; color:var(--dim); }
+  body.ambient .dot { border-radius:50%; background:#2a2e36; } body.ambient .dot.ok { background:rgb(var(--ac)); box-shadow:0 0 5px rgba(var(--ac),.6); }
+  body.ambient #btnConnect { border-color:rgb(var(--lap)); color:#fff; box-shadow:none; }
+  body.ambient .tabs button.cur, body.ambient button.on { background:#14171d; border-color:#2b3039; color:#fff; box-shadow:inset 0 -2px 0 rgb(var(--ac)); }
+  body.ambient .hero { border-radius:18px; border:1px solid #1d2128; background:var(--perf) 0 0/6px 6px, radial-gradient(90% 60% at 50% 30%, #12151b 0%, #08090c 70%);
+                       box-shadow:inset 0 1px 0 rgba(255,255,255,.04), inset 0 -30px 60px -40px rgba(var(--ac),.18); }
+  body.ambient .hero::before { background:linear-gradient(180deg, rgba(255,255,255,.025), transparent 40%); }
+  body.ambient #tabGauges .hero { justify-content:space-between; }
+  body.ambient .lbl { font:500 11px var(--serif); letter-spacing:.2em; color:#8b93a3; }
+  body.ambient .lbl b { color:rgb(var(--ac)); font-weight:500; }
+  body.ambient .tach, body.ambient .tachscale, body.ambient .sbar, body.ambient .scale { display:none; }
+  /* round cluster */
+  body.ambient .dial { display:block; position:relative; width:min(86%, 330px, 44vh); aspect-ratio:1; margin:clamp(2px,1vh,10px) auto 0; }
+  body.ambient .ring { display:block; position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+  .ring .trk { fill:none; stroke:rgba(255,255,255,.07); stroke-linecap:round; }
+  .ring .rpm { fill:none; stroke:#e8edf5; stroke-width:3.2; stroke-linecap:round; transition:stroke .2s; filter:drop-shadow(0 0 2px rgba(232,237,245,.35)); }
+  .ring .rpm.am { stroke:var(--warn); } .ring .rpm.rd { stroke:var(--bad); filter:drop-shadow(0 0 4px rgba(255,59,48,.7)); }
+  .ring .bst { fill:none; stroke:rgb(var(--ac)); stroke-width:2.4; stroke-linecap:round; filter:drop-shadow(0 0 3px rgba(var(--ac),.6)); }
+  .ring .bst.hi { stroke:#7fb0ff; }
+  .ring .tk { stroke:rgba(232,237,245,.35); stroke-width:1; } .ring .tk.mj { stroke:rgba(232,237,245,.7); stroke-width:1.4; }
+  .ring .tk.red { stroke:var(--bad); stroke-width:1.6; }
+  .ring .num { fill:#aab2c0; font:500 9.5px var(--serif); text-anchor:middle; dominant-baseline:middle; }
+  .ring .num.red { fill:var(--bad); }
+  .ring .pkm { stroke:#fff; stroke-width:1.6; stroke-linecap:round; }
+  .ring .bt { fill:rgba(var(--ac),.75); font:500 7px var(--serif); text-anchor:middle; dominant-baseline:middle; letter-spacing:.06em; }
+  body.ambient .dial .val { position:absolute; left:50%; top:47%; transform:translate(-50%,-50%); width:56%; margin:0; }
+  body.ambient .dial #boostLabel { position:absolute; left:0; right:0; top:68%; }
+  body.ambient #rpmLimitLbl { color:#8b93a3; }
+  .seg .tx { fill:currentColor; }
+  body.ambient .seg { color:#eef2f8; filter:none; }
+  body.ambient .seg .tx { font-weight:300; }
+  body.ambient .peakline .seg { color:#cfd6e2; width:min(30%, 120px); }
+  body.ambient .peakline .lbl { color:#7d8594; }
+  /* ambient light strip */
+  body.ambient .strip { display:block; height:2px; margin:clamp(4px,1vh,10px) 6% 0; border-radius:2px; --b:0;
+        background:linear-gradient(90deg, transparent, rgb(var(--ac)) 18%, rgb(var(--ac)) 82%, transparent);
+        opacity:calc(.35 + var(--b) * .65); box-shadow:0 0 calc(4px + var(--b) * 10px) rgba(var(--ac),.8); transition:background .25s, box-shadow .25s; }
+  body.ambient .strip.sh { background:linear-gradient(90deg, transparent, #fff 18%, #fff 82%, transparent); box-shadow:0 0 12px rgba(255,255,255,.8); opacity:1; }
+  body.ambient .strip.wn { background:linear-gradient(90deg, transparent, var(--warn) 18%, var(--warn) 82%, transparent); box-shadow:0 0 10px rgba(255,174,51,.7); opacity:1; }
+  body.ambient .strip.al { background:linear-gradient(90deg, transparent, var(--bad) 18%, var(--bad) 82%, transparent); box-shadow:0 0 12px rgba(255,59,48,.8); opacity:1; animation:blink .5s steps(1) infinite; }
+  /* embossed sigil: graphite, recessed, a single fine blue line traces in */
+  body.ambient .wall { display:none; }
+  body.ambient .summon { flex:1 1 0; min-height:96px; margin-top:clamp(4px,1vh,10px); }
+  body.ambient .summon .sig { max-height:170px; max-width:46%; }
+  body.ambient .summon .base { animation:none; filter:drop-shadow(0 -1px 0 rgba(0,0,0,.9)) drop-shadow(0 1px 0 rgba(255,255,255,.07)); }
+  body.ambient .summon .base .tri { stroke:#262a32; stroke-width:2.4; }
+  body.ambient .summon .base .st { stroke:#262a32; stroke-width:3; }
+  body.ambient .summon .lit { filter:drop-shadow(0 0 calc(1px + var(--b) * 3px) rgba(var(--ac),.7)); }
+  body.ambient .summon .lit .tr, body.ambient .summon .lit .cap { stroke:rgb(var(--ac)); stroke-width:1.3; }
+  body.ambient .summon .lit .tri { stroke:rgba(var(--ac),.8); stroke-width:1; }
+  body.ambient .summon.full .sig { animation:none; }
+  /* lamps: factory telltales */
+  body.ambient .lamps span { font:600 9px var(--serif); letter-spacing:.12em; border-radius:6px; border:1px solid #1f232a; color:#3a404b; background:#0c0e12; }
+  body.ambient .lamps span.on { background:#0c0e12; color:#fff; border-color:rgb(var(--ac)); box-shadow:inset 0 -2px 0 rgb(var(--ac)); }
+  /* tiles: small ring dials */
+  body.ambient .g { border-radius:14px; background:var(--perf) 0 0/6px 6px, linear-gradient(180deg,#121419,#0a0b0e); border:1px solid #1d2128; --f:0; position:relative; }
+  body.ambient .g::before { content:''; position:absolute; left:50%; top:42%; width:min(74%, 70px); aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%;
+        background:conic-gradient(from 225deg, rgb(var(--ac)) calc(var(--f) * 270deg), rgba(255,255,255,.07) 0 270deg, transparent 0);
+        -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px)); mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+        transition:--f .3s; }
+  body.ambient .g.warn::before { background:conic-gradient(from 225deg, var(--warn) calc(var(--f) * 270deg), rgba(255,255,255,.07) 0 270deg, transparent 0); }
+  body.ambient .g.crit::before { background:conic-gradient(from 225deg, var(--bad) calc(var(--f) * 270deg), rgba(255,255,255,.07) 0 270deg, transparent 0); }
+  body.ambient .g { min-height:96px; }
+  body.ambient .g .l { position:absolute; left:0; right:0; bottom:7px; font:500 9.5px var(--serif); letter-spacing:.14em; color:#8b93a3; }
+  body.ambient .g .v { position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); width:46%; margin:0; }
+  body.ambient .g .sub { position:absolute; left:0; right:0; top:4px; color:rgb(var(--ac)); font-family:var(--serif); }
+  body.ambient .tsec, body.ambient .ctl { border-radius:12px; background:#0e1014; border-color:#1f232a; }
+  body.ambient .tsec h3 { color:rgb(var(--ac)); font-family:var(--serif); }
+  body.ambient .foot, body.ambient #themeBtn { font:500 10px var(--serif); letter-spacing:.12em; color:#6c7483; }
+  body.ambient .toast { border-color:rgb(var(--lap)); background:#111318; border-radius:10px; }
+  body.ambient .alarm { background:rgba(8,8,10,.95); border:2px solid var(--bad); }
+  @media (max-height:815px) { body.ambient .summon { min-height:80px; } body.ambient .dial { width:min(80%, 300px, 40vh); } }
 </style>
 </head>
 <body>
@@ -467,10 +551,12 @@
   <div class="lbl" style="display:flex;justify-content:space-between"><span>RPM <b>×1000</b></span><span id="rpmLimitLbl"></span></div>
   <div class="tach" id="tach"></div>
   <div class="tachscale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span></div>
+  <div class="dial" id="dial"><svg class="ring" id="ring" viewBox="0 0 200 200"></svg>
   <div class="val seg" id="boostVal"></div>
-  <div class="lbl" id="boostLabel">Boost <b>psi</b></div>
+  <div class="lbl" id="boostLabel">Boost <b>psi</b></div></div>
   <div class="sbar" id="sbar"></div>
   <div class="scale"><span>0</span><span>10</span><span>20</span><span>30</span></div>
+  <div class="strip" id="strip"></div>
   <div class="peakline"><span class="lbl">Peak</span><span class="seg" id="peakVal"></span><span id="hz"></span></div>
   <div class="summon" id="summon"><div class="wall" id="wallL"></div><div class="sigcard"><div class="cardhd"><span>LINK 07E0 · 07E8</span><span id="cardHz">IDLE</span></div><svg class="sig" viewBox="0 0 100 96">
     <defs><linearGradient id="goldLeaf" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="90" y2="96"><stop offset="0" stop-color="#fff0c2"/><stop offset=".35" stop-color="#e2b654"/><stop offset=".62" stop-color="#b07a22"/><stop offset="1" stop-color="#f6d580"/></linearGradient></defs>
@@ -519,7 +605,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v57 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v58 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -663,7 +749,7 @@
   }
   function setSeg(id, text, cells) {
     const cl = document.body.classList;
-    const mode = cl.contains('redshift') ? 't' : cl.contains('lapiz') && [...String(text)].every(c => NUM[c] || c === '.' || c === ' ') ? 'n' : 's';
+    const mode = cl.contains('redshift') || cl.contains('ambient') ? 't' : cl.contains('lapiz') && [...String(text)].every(c => NUM[c] || c === '.' || c === ' ') ? 'n' : 's';
     const key = mode + '|' + text; if (segCache.get(id) === key) return; segCache.set(id, key); segCells.set(id, cells);
     $(id).innerHTML = mode === 't' ? txtSVG(text, cells) : mode === 'n' ? numSVG(text, cells) : segSVG(text, cells);
   }
@@ -682,8 +768,42 @@
     const n = Math.max(0, Math.min(TACH_N, Math.round(rpm / TACH_MAX * TACH_N)));
     if (n !== lastTach) { lastTach = n; for (let i = 0; i < TACH_N; i++) segs[i].className = (segs[i].dataset.z || '') + (i < n ? ' lit' : ''); }
     $('tach').classList.toggle('over', rpm >= red);
+    paintRing(rpm, red, amber);
+  }
+  // ----- Ambient round cluster: RPM on the outer ring (0-7k over 270°), boost on the inner ring (0-30 psi) -----
+  const RA0 = 135, RA = 270, RC = 100;
+  const polar = (r, deg) => [RC + r * Math.cos(deg * Math.PI / 180), RC + r * Math.sin(deg * Math.PI / 180)];
+  const arcD = (r, f0, f1) => { const a0 = RA0 + RA * f0, a1 = RA0 + RA * f1, [x0, y0] = polar(r, a0), [x1, y1] = polar(r, a1); return `M${x0.toFixed(2)},${y0.toFixed(2)} A${r},${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)},${y1.toFixed(2)}`; };
+  (function buildRing() {
+    let h = `<path class="trk" stroke-width="3.2" d="${arcD(92, 0, 1)}"/><path class="trk" stroke-width="2.4" d="${arcD(72, 0, 1)}"/>`;
+    for (let i = 0; i <= 70; i++) { const f = i / 70, mj = i % 10 === 0, [x0, y0] = polar(mj ? 84 : 86.5, RA0 + RA * f), [x1, y1] = polar(89, RA0 + RA * f);
+      h += `<line class="tk${mj ? ' mj' : ''}" data-r="${i * 100}" x1="${x0.toFixed(2)}" y1="${y0.toFixed(2)}" x2="${x1.toFixed(2)}" y2="${y1.toFixed(2)}"/>`; }
+    for (let k = 0; k <= 7; k++) { const [x, y] = polar(77.5, RA0 + RA * k / 7); h += `<text class="num" data-r="${k * 1000}" x="${x.toFixed(1)}" y="${y.toFixed(1)}">${k}</text>`; }
+    for (const p of [10, 20, 30]) { const [x, y] = polar(64, RA0 + RA * p / 30); h += `<text class="bt" x="${x.toFixed(1)}" y="${y.toFixed(1)}">${p}</text>`; }
+    h += `<path class="rpm" id="ringRpm" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" d="${arcD(92, 0, 1)}"/>`;
+    h += `<path class="bst" id="ringBst" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" d="${arcD(72, 0, 1)}"/>`;
+    h += `<line class="pkm" id="ringPk" x1="0" y1="0" x2="0" y2="0" opacity="0"/>`;
+    $('ring').innerHTML = h;
+  })();
+  let ringZone = '';
+  function paintRing(rpm, red, amber) {
+    const f = Math.max(0, Math.min(1, rpm / 7000));
+    $('ringRpm').style.strokeDashoffset = (1 - f).toFixed(4);
+    $('ringRpm').setAttribute('class', 'rpm' + (rpm >= red ? ' rd' : rpm >= amber ? ' am' : ''));
+    const z = red + ''; if (z !== ringZone) { ringZone = z;
+      $('ring').querySelectorAll('.tk').forEach(t => t.classList.toggle('red', +t.dataset.r >= red));
+      $('ring').querySelectorAll('.num').forEach(t => t.classList.toggle('red', +t.dataset.r >= red)); }
+  }
+  function paintRingBoost(psi) {
+    const f = Math.max(0, Math.min(1, psi / 30));
+    $('ringBst').style.strokeDashoffset = (1 - f).toFixed(4); $('ringBst').setAttribute('class', 'bst' + (psi >= 20 ? ' hi' : ''));
+    const pk = $('ringPk');
+    if (peak > .5) { const a = RA0 + RA * Math.min(1, peak / 30), [x0, y0] = polar(68, a), [x1, y1] = polar(76, a);
+      pk.setAttribute('x1', x0.toFixed(2)); pk.setAttribute('y1', y0.toFixed(2)); pk.setAttribute('x2', x1.toFixed(2)); pk.setAttribute('y2', y1.toFixed(2)); pk.setAttribute('opacity', '.85'); }
+    else pk.setAttribute('opacity', '0');
   }
   function paintBar(psi) {
+    paintRingBoost(psi);
     const n = Math.max(0, Math.min(30, Math.round(psi))), pk = Math.max(0, Math.min(29, Math.round(peak) - 1));
     if (n === lastBar && pk === lastPk) return; lastBar = n; lastPk = pk;
     const segs = $('sbar').children;
@@ -1083,6 +1203,7 @@
       const isRed = rpm >= red; shiftState = isRed ? 2 : rpm >= amber ? 1 : 0;
       if (isRed && !wasRed && now - lastShiftFlash > 3000) {
         if (theme === 'lapiz' && driftOn) { lastShiftFlash = now; lightCue([255,176,40], 2, 70, 60); }   // gold flicker
+        else if (theme === 'ambient' && cueShift) { lastShiftFlash = now; lightCue([200,220,255], 1, 300); }   // soft white pulse
         else if (theme === 'redshift' && cueShift) { lastShiftFlash = now; lightCue([0,210,255], 2, 70, 60); }   // cyan double
         else if (cueShift) { lastShiftFlash = now; lightCue([255,0,0], 1, 250); }
       }
@@ -1111,7 +1232,10 @@
   const LZ_PINK = [255,0,150,0], LZ_GOLD = [255,140,0,0];
   // Redshift ramp: red -> magenta -> cyan at full (the readout color takes over the car)
   const RS_RED = [255,0,28,0], RS_MAG = [255,0,190,0], RS_CYAN = [0,210,255,0];
+  // Ambient ramp: dash-strip blue -> cool white (white LED) at full; no red, it's the grown-up one
+  const AMB_BLUE = [0,80,255,0], AMB_WHITE = [40,70,160,255];
   function rampColor(base, mix) {
+    if (typeof theme !== 'undefined' && theme === 'ambient') return base.map((v, i) => Math.round(v + (AMB_WHITE[i] - v) * mix));
     if (typeof theme !== 'undefined' && theme === 'redshift') {
       if (mix <= .5) { const t = mix / .5; return base.map((v, i) => Math.round(v + (RS_MAG[i] - v) * t)); }
       const t = (mix - .5) / .5; return RS_MAG.map((v, i) => Math.round(v + (RS_CYAN[i] - v) * t));
@@ -1247,6 +1371,7 @@
   function setVB(gid, val) {
     if (val == null) return;
     const [lo, hi] = VB_RANGE[gid]; const n = Math.max(0, Math.min(VB_N, Math.round((val - lo) / (hi - lo) * VB_N)));
+    $(gid).style.setProperty('--f', Math.max(0, Math.min(1, (val - lo) / (hi - lo))).toFixed(3));
     if (vbLast[gid] === n) return; vbLast[gid] = n;
     [...document.querySelector(`[data-vb="${gid}"]`).children].forEach((e, i) => e.classList.toggle('lit', i < n));
   }
@@ -1271,6 +1396,8 @@
     on('lpHot', worst === 2 ? 'red' : worst === 1 ? 'amber' : '');
     paintMode();
     paintSummon(psi);
+    const sp = $('strip'); sp.style.setProperty('--b', (sumEnv / 7).toFixed(2));
+    sp.className = 'strip' + (worst === 2 ? ' al' : worst === 1 ? ' wn' : shiftState === 2 ? ' sh' : '');
   }
   // sigil trace: progress 0..7 strokes, each stroke draws along its length; fast rise, slow fall
   let sumEnv = 0, sumFull = false;
@@ -1371,14 +1498,14 @@
     const p = sumEnv / 7, night = document.body.classList.contains('night');
     const wait = (p > 0.85 ? 1000 + Math.random() * 1500 : 6000 + Math.random() * 6000 - p * 3500) * (night ? 1.7 : 1);
     setTimeout(() => {
-      if (document.body.classList.contains('lapiz')) return glitchLoop();
+      if (document.body.classList.contains('lapiz') || document.body.classList.contains('ambient')) return glitchLoop();
       const el = $('summon'); el.classList.remove('glitch'); void el.offsetWidth; el.classList.add('glitch');
       tearWalls(night ? 3 : 6);
       setTimeout(() => el.classList.remove('glitch'), 680); glitchLoop();
     }, wait);
   })();
-  const THEMES = ['outrun', 'lapiz', 'uno', 'redshift'];
-  const THEME_NAME = { outrun:'Outrun', lapiz:'Lapiz', uno:'Uno', redshift:'Redshift' }, THEME_BG = { outrun:'#06050b', lapiz:'#03040b', uno:'#040202', redshift:'#0a0204' };
+  const THEMES = ['outrun', 'lapiz', 'uno', 'redshift', 'ambient'];
+  const THEME_NAME = { outrun:'Outrun', lapiz:'Lapiz', uno:'Uno', redshift:'Redshift', ambient:'Ambient' }, THEME_BG = { ambient:'#050608', outrun:'#06050b', lapiz:'#03040b', uno:'#040202', redshift:'#0a0204' };
   let theme = store.get('dd_theme', 'outrun');
   let driftOn = store.get('dd_drift', false);
   function setDrift(v) { driftOn = v; store.set('dd_drift', v); }
@@ -1387,7 +1514,7 @@
   const LAPIZ_RGB2 = [72, 24, 255];      // the indigo end of the drift
   function themeLight() {
     setDrift(theme === 'lapiz');
-    const c = theme === 'lapiz' ? [...LAPIZ_RGB, 0] : theme === 'uno' ? [0, 0, 0, 255] : theme === 'redshift' ? [...RS_RED] : null;
+    const c = theme === 'lapiz' ? [...LAPIZ_RGB, 0] : theme === 'uno' ? [0, 0, 0, 255] : theme === 'redshift' ? [...RS_RED] : theme === 'ambient' ? [...AMB_BLUE] : null;
     if (!c) return;
     L[1] = 0xff; [L[5], L[6], L[7], L[8]] = c; lightSend();
   }
@@ -1616,7 +1743,7 @@
     $('themeBtn').textContent = 'Theme: ' + THEME_NAME[theme];
     document.querySelector('meta[name=theme-color]').content = THEME_BG[theme];
     resegAll(); lastPk = -2; illuminate();
-    $('rfL').textContent = theme === 'lapiz' ? 'Pink from' : theme === 'redshift' ? 'Shift from' : 'Red from'; $('rtL').textContent = theme === 'lapiz' ? 'Full gold' : theme === 'redshift' ? 'Full cyan' : 'Full red';
+    $('rfL').textContent = theme === 'lapiz' ? 'Pink from' : theme === 'redshift' ? 'Shift from' : theme === 'ambient' ? 'White from' : 'Red from'; $('rtL').textContent = theme === 'lapiz' ? 'Full gold' : theme === 'redshift' ? 'Full cyan' : theme === 'ambient' ? 'Full white' : 'Full red';
   }
   $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); themeLight(); toast('Theme: ' + THEME_NAME[theme]); };
   applyTheme();
