@@ -417,7 +417,7 @@
   /* connection card around the sigil */
   body.redshift .summon { flex:1 1 0; min-height:128px; margin-top:clamp(4px,1vh,12px); }
   body.redshift .sigcard { display:flex; flex-direction:column; align-items:center; justify-content:space-between; flex:0 0 auto; width:min(44%, 200px); max-height:230px;
-        padding:6px 8px; border:1px solid rgba(var(--ac),.45); background:linear-gradient(180deg, rgba(70,10,16,.55), rgba(20,3,6,.7)); clip-path:var(--clip);
+        padding:6px 8px; border:1px solid rgba(var(--ac),.45); background:linear-gradient(180deg, rgba(52,8,13,.94), rgba(16,2,5,.96)); clip-path:var(--clip);
         box-shadow:inset 0 0 18px rgba(var(--ac),.12); }
   body.redshift .sigcard .sig { max-width:100%; max-height:none; flex:1 1 0; min-height:0; height:auto; width:100%; }
   body.redshift .cardhd { display:flex; justify-content:space-between; width:100%; font:600 8.5px var(--serif); letter-spacing:.14em; color:rgba(var(--ac),.8); border-bottom:1px solid rgba(var(--ac),.3); padding-bottom:3px; }
@@ -435,6 +435,11 @@
   body.redshift .hexcol b { font-weight:500; color:#04181a; background:rgb(var(--ro)); box-shadow:0 0 6px rgba(var(--ro),.7); }
   body.redshift .hexcol i { font-style:normal; color:rgba(var(--ro),.85); }
   body.night.redshift .hexcol { color:rgba(var(--ac),.38); }
+  body.redshift #wallRHex { text-align:left; padding-left:6px; color:rgba(var(--ro),.8); }
+  body.redshift .hexcol .lg.y { color:rgb(var(--yel)); }
+  body.redshift .hexcol .lg.k { color:#ff5aa0; text-shadow:0 0 6px rgba(255,60,140,.6); }
+  body.redshift .hexcol .lg.d { color:rgba(var(--ac),.6); }
+  body.redshift .hexcol .cur { animation:blink 1s steps(1) infinite; color:rgb(var(--ro)); }
   body.redshift .summon.glitch .wall { animation:wallflash .62s steps(1) 1; }
   /* lamps: menu buttons */
   body.redshift .lamps span { font:700 10px var(--serif); letter-spacing:.12em; border-radius:0; clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%);
@@ -520,7 +525,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v54 · tap peak: reset</span><span><button id="themeBtn">Theme</button><button id="bgBtn"></button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v55 · tap peak: reset</span><span><button id="themeBtn">Theme</button><button id="bgBtn"></button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -1605,10 +1610,38 @@
     if (Date.now() - hexLast > 2000) { const b = () => (Math.random() * 256 | 0).toString(16).toUpperCase().padStart(2, '0'); hexLines.push([b(), b(), b()].join(' ')); while (hexLines.length > 40) hexLines.shift(); hexDirty = true; }
     $('cardHz').textContent = Date.now() - hexLast < 2000 ? 'LIVE' : 'IDLE';
     if (!hexDirty) return; hexDirty = false;
-    const rows = 10, L = hexLines.slice(-rows * 2), cur = Math.floor(Math.random() * L.length);
-    const fmt = (arr, off) => arr.map((ln, i) => i + off === cur ? ln.replace(/^(..)/, '<b>$1</b>') : (i + off) % 5 === 0 ? `<i>${ln}</i>` : ln).join('\n');
-    $('wallLHex').innerHTML = fmt(L.slice(0, rows), 0); $('wallRHex').innerHTML = fmt(L.slice(rows), rows);
+    const rows = 10, L = hexLines.slice(-rows), cur = Math.floor(Math.random() * L.length);
+    $('wallLHex').innerHTML = L.map((ln, i) => i === cur ? ln.replace(/^(..)/, '<b>$1</b>') : i % 5 === 0 ? `<i>${ln}</i>` : ln).join('\n');
   }, 220);
+
+  // ----- Redshift: decoded live log (right column). One short line whenever something changes enough to matter. -----
+  const logL = []; let lgB = null, lgR = null, lgC = null, lgI = null, lgPull = false, lgPk = 0, lgLink = null, lgK = [0,0,0,0], lgW = {};
+  const logPush = (t, c = '') => { logL.push([t, c]); while (logL.length > 30) logL.shift(); logDirty = true; };
+  let logDirty = true;
+  setInterval(() => {
+    if (theme !== 'redshift') return;
+    const now = Date.now(), link = now - hexLast < 2000;
+    if (link !== lgLink) { if (lgLink !== null || link) logPush(link ? 'LINK UP' : 'LINK DOWN', link ? 'y' : 'd'); lgLink = link; }
+    const psi = rsPsi;
+    if (lgB === null || Math.abs(psi - lgB) >= 1.5 || (psi > 0) !== (lgB > 0)) { logPush(psi < 0 ? 'VAC ' + (-psi).toFixed(1) : 'BST ' + psi.toFixed(1)); lgB = psi; }
+    const r = liveRpm || 0; if (lgR === null || Math.abs(r - lgR) >= 400) { logPush('RPM ' + Math.round(r / 10) * 10); lgR = r; }
+    if (temps.cool != null && (lgC === null || Math.abs(temps.cool - lgC) >= 2)) { logPush('CLT ' + Math.round(temps.cool)); lgC = temps.cool; }
+    if (temps.iat != null && (lgI === null || Math.abs(temps.iat - lgI) >= 2)) { logPush('IAT ' + Math.round(temps.iat)); lgI = temps.iat; }
+    ['200A','200B','200C','200D'].forEach((d, i) => {
+      const v = tvT[d] && now - tvT[d] < 1500 ? tv[d] : 0;
+      if (v < -1.5 && Math.abs(v - lgK[i]) >= .5) { logPush(`KR C${i + 1} ${v.toFixed(1)}`, 'k'); lgK[i] = v; }
+      else if (v >= -1 && lgK[i] < -1.5) lgK[i] = 0;
+    });
+    const inPull = !!pull;
+    if (inPull && !lgPull) logPush('PULL >>', 'y');
+    if (!inPull && lgPull) { logPush('END ' + lgPk.toFixed(1), 'y'); if (lgPk >= peak - .05 && lgPk > 8) logPush('PK  ' + peak.toFixed(1), 'y'); lgPk = 0; }
+    if (inPull) lgPk = Math.max(lgPk, psi);
+    lgPull = inPull;
+    for (const k in st8) { const lv = st8[k].level; if ((lgW[k] || 0) !== lv) { if (lv) logPush((lv === 2 ? 'HOT ' : 'WARN ') + ({ cool:'CLT', iat:'IAT', oil:'OIL' }[k] || k.toUpperCase()), 'k'); lgW[k] = lv; } }
+    if (!logDirty || curTab !== 'g' || document.hidden) return; logDirty = false;
+    const rows = 10, L = logL.slice(-rows);
+    $('wallRHex').innerHTML = L.map(([t, c], i) => `<span class="lg ${c}">${t}${i === L.length - 1 ? '<span class="cur">_</span>' : ''}</span>`).join('\n');
+  }, 250);
 
   // ----- Lapiz: the ward. Glowing contour lines that swirl around the sigil and slowly reshape.
   //   blue   = healthy
