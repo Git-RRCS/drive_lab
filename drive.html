@@ -10,7 +10,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   /* Outrun / 80s digital cluster. Aqua = readouts, magenta = frames/accents, amber = caution, red = alarm. */
   :root { --bg:#06050b; --card:#0b0916; --card2:#0e0b1c; --line:#241c3d; --text:#e9e6ff; --dim:#7c74a8;
@@ -343,6 +343,47 @@
   @keyframes star { 22% { opacity:1; } 100% { opacity:0; } }
   body.night .flecks { opacity:.75; }
   @media (max-height:860px) { body.lapiz .lbl { font-size:11.5px; } body.lapiz .tachscale, body.lapiz .scale { font-size:10px; } body.lapiz .summon { min-height:104px; } body.lapiz .peakline { margin-top:4px; } }
+
+  /* ===== Lapiz styles (trial): tap "Style" in the footer to cycle ===== */
+  #styleBtn { display:none; background:none; border:none; padding:0 0 0 8px; font:inherit; color:rgb(var(--gold)); text-decoration:underline; letter-spacing:.1em; }
+  body.lapiz #styleBtn { display:inline; font-size:11px; }
+  /* 2 Instrument: same dial, modern sans labels */
+  body.lapiz.lz2, body.lapiz.lz3 { --serif:'Inter',system-ui,sans-serif; }
+  body.lapiz.lz2 .lbl, body.lapiz.lz3 .lbl { font-size:11px; font-weight:500; letter-spacing:.3em; }
+  body.lapiz.lz2 .g .l, body.lapiz.lz3 .g .l { font-size:9.5px; font-weight:500; letter-spacing:.2em; }
+  body.lapiz.lz2 .tachscale, body.lapiz.lz2 .scale, body.lapiz.lz3 .tachscale, body.lapiz.lz3 .scale { font-size:9px; font-weight:400; }
+  body.lapiz.lz2 button, body.lapiz.lz3 button, body.lapiz.lz2 .chip, body.lapiz.lz3 .chip { font-weight:500; letter-spacing:.2em; font-size:12px; }
+  body.lapiz.lz2 .lamps span, body.lapiz.lz3 .lamps span { font-size:8.5px; font-weight:600; letter-spacing:.12em; }
+  body.lapiz.lz2 .foot, body.lapiz.lz3 .foot, body.lapiz.lz2 #themeBtn, body.lapiz.lz3 #themeBtn, body.lapiz.lz2 #styleBtn, body.lapiz.lz3 #styleBtn { font-size:9px; font-weight:500; }
+  /* 3 Ward: dark night scene, the barrier is the hero; gold saved for summon and peak */
+  body.lapiz.lz3 { --line:#0f2148; --dim:#6f9ad0; --glow:drop-shadow(0 0 6px rgba(70,165,255,.65)); }
+  body.lapiz.lz3 .hero { background:radial-gradient(90% 60% at 50% 62%, #081a44 0%, #040b22 55%, #01030a 100%); border-color:rgba(70,165,255,.28);
+                         box-shadow:inset 0 0 0 1px rgba(70,165,255,.08), inset 0 0 60px rgba(0,0,0,.6); }
+  body.lapiz.lz3 .flecks { display:none; }
+  body.lapiz.lz3 .g { background:linear-gradient(180deg,#06112e,#030818); border-color:rgba(70,165,255,.22); }
+  body.lapiz.lz3 .lbl, body.lapiz.lz3 .g .l, body.lapiz.lz3 .tachscale, body.lapiz.lz3 .scale { color:#7fb2e6; }
+  body.lapiz.lz3 .lbl b { color:rgb(120,200,255); }
+  body.lapiz.lz3 .summon .base .tri, body.lapiz.lz3 .summon .base .tri2 { stroke:rgba(90,175,255,.4); }
+  body.lapiz.lz3 .summon .orn { fill:rgba(90,175,255,.55); }
+  body.lapiz.lz3 .summon .base .st { stroke:rgba(90,175,255,.22); }
+  body.lapiz.lz3 .wall path { stroke:rgb(110,190,255); }
+  body.lapiz.lz3 .lamps span { border-color:rgba(70,165,255,.2); color:rgba(110,190,255,.36); background:rgba(70,165,255,.03); }
+  body.lapiz.lz3 .lamps span.on { background:rgb(110,195,255); border-color:rgb(110,195,255); color:#021022; box-shadow:0 0 8px rgba(70,165,255,.7); }
+  body.lapiz.lz3 .sbar i.hi:not(.lit):not(.pk) { background:rgba(70,165,255,.10); }
+  body.lapiz.lz3 .sbar i.lit.hi { background:rgb(120,200,255); box-shadow:0 0 6px rgba(70,165,255,.7); }
+  body.lapiz.lz3 .tabs button.cur, body.lapiz.lz3 button.on { box-shadow:0 0 12px rgba(70,165,255,.45), inset 0 -2px 0 rgb(110,195,255); }
+  body.lapiz.lz3 #btnConnect { border-color:rgb(110,195,255); box-shadow:0 0 10px rgba(70,165,255,.4); }
+  /* 4 Watch: lapis watch dial; hairline indices instead of blocks, finer numerals, gold indices */
+  body.lapiz.lz4 .tach i, body.lapiz.lz4 .sbar i { transform:scaleX(.3); border-radius:0; }
+  body.lapiz.lz4 .tach { gap:1px; }
+  body.lapiz.lz4 .tach i.lit:not(.z1):not(.z2) { background:rgb(var(--gold)); box-shadow:0 0 5px rgba(var(--gold),.6); }
+  body.lapiz.lz4 .sbar { height:clamp(18px, 3vh, 28px); }
+  body.lapiz.lz4 .sbar i.lit:not(.hi) { background:rgb(var(--gold)); box-shadow:0 0 4px rgba(var(--gold),.5); }
+  body.lapiz.lz4 .sbar i.lit.hi { background:#fff; box-shadow:0 0 5px rgba(255,255,255,.7); }
+  body.lapiz.lz4 .seg .nm { stroke-width:3.4; }
+  body.lapiz.lz4 .g .seg .nm { stroke-width:4.4; }
+  body.lapiz.lz4 .lbl { font-weight:500; letter-spacing:.32em; }
+  body.lapiz.lz4 .hero { border-color:rgba(var(--gold),.5); box-shadow:inset 0 0 0 3px #050b29, inset 0 0 0 4px rgba(var(--gold),.25), inset 0 0 48px rgba(0,0,0,.5); }
 </style>
 </head>
 <body>
@@ -411,7 +452,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v49 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v50 · tap peak: reset</span><span><button id="themeBtn">Theme</button><button id="styleBtn"></button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -1351,7 +1392,7 @@
     $('topoA').setAttribute('d', dA + dB); $('topoA').style.stroke = `rgb(${col})`;
     $('topoB').setAttribute('d', dA); $('topoB').style.stroke = `rgb(${col})`;
     $('topoC').setAttribute('d', dB); $('topoC').style.stroke = `rgb(${col})`;
-    const dim = night ? .65 : 1;
+    const dim = (night ? .65 : 1) * (document.body.classList.contains('lz3') ? 1.7 : 1);
     $('topoB').style.opacity = ((.25 + .12 * b + .12 * wardS) * dim).toFixed(2);
     $('topoC').style.opacity = ((.38 + .2 * b + .15 * wardS) * dim).toFixed(2);
     // breach: magenta wisps flare out from the sigil, thin red veins, a bright point at the center
@@ -1385,9 +1426,18 @@
     THEMES.forEach(t => document.body.classList.toggle(t, t === theme));
     $('themeBtn').textContent = 'Theme: ' + THEME_NAME[theme];
     document.querySelector('meta[name=theme-color]').content = THEME_BG[theme];
+    if (typeof applyStyle === 'function') applyStyle();
     resegAll(); lastPk = -2; illuminate();
     $('rfL').textContent = theme === 'lapiz' ? 'Pink from' : 'Red from'; $('rtL').textContent = theme === 'lapiz' ? 'Full gold' : 'Full red';
   }
+  // Lapiz style trial
+  const LZ_STYLES = ['Dial', 'Instrument', 'Ward', 'Watch'];
+  let lzStyle = store.get('dd_lzStyle', 0);
+  function applyStyle() {
+    LZ_STYLES.forEach((n, i) => document.body.classList.toggle('lz' + (i + 1), i === lzStyle && theme === 'lapiz'));
+    $('styleBtn').textContent = 'Style: ' + LZ_STYLES[lzStyle];
+  }
+  $('styleBtn').onclick = () => { lzStyle = (lzStyle + 1) % LZ_STYLES.length; store.set('dd_lzStyle', lzStyle); applyStyle(); toast('Lapiz style: ' + LZ_STYLES[lzStyle]); };
   $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); themeLight(); toast('Theme: ' + THEME_NAME[theme]); };
   applyTheme();
 
