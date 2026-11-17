@@ -389,8 +389,8 @@
   <div class="ctl"><span class="t">Bright</span><input type="range" id="bright" min="1" max="100"></div>
   <div class="motor" id="motor"></div>
   <div class="cues"><button id="reGlow">Boost glow</button><button id="reTwinkle">Boost twinkle</button><button id="cueWarn">Warning flashes</button><button id="cueShift">Shift flash</button><button id="introBtn">Startup intro</button></div>
-  <div class="ctl"><span class="t">Red from <b id="rfV"></b></span><input type="range" id="redFrom" min="2" max="30" step="1"></div>
-  <div class="ctl"><span class="t">Full red <b id="rtV"></b></span><input type="range" id="redFull" min="6" max="40" step="1"></div>
+  <div class="ctl"><span class="t"><span id="rfL">Red from</span> <b id="rfV"></b></span><input type="range" id="redFrom" min="2" max="30" step="1"></div>
+  <div class="ctl"><span class="t"><span id="rtL">Full red</span> <b id="rtV"></b></span><input type="range" id="redFull" min="6" max="40" step="1"></div>
 </div>
 </section>
 
@@ -411,7 +411,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v48 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v49 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -992,6 +992,13 @@
   let reGlow = store.get('dd_reGlow', false), reTwinkle = store.get('dd_reTwinkle', false);
   const GLOW_FULL_PSI = 18;
   const RED = [220,0,18,0];         // deep red, a brighter cousin of the head unit's oxblood
+  // Lapiz ramp for the starlights: base -> pink at the midpoint -> gold at full (LED-tuned values)
+  const LZ_PINK = [255,0,150,0], LZ_GOLD = [255,140,0,0];
+  function rampColor(base, mix) {
+    if (typeof theme === 'undefined' || theme !== 'lapiz') return base.map((v, i) => Math.round(v + (RED[i] - v) * mix));
+    if (mix <= .5) { const t = mix / .5; return base.map((v, i) => Math.round(v + (LZ_PINK[i] - v) * t)); }
+    const t = (mix - .5) / .5; return LZ_PINK.map((v, i) => Math.round(v + (LZ_GOLD[i] - v) * t));
+  }
   let redFrom = store.get('dd_redFrom', 8), redFull = store.get('dd_redFull', 22);  // psi
   let redEnv = 0;                  // separate, slower envelope so the color sweeps instead of snapping
   let sentMix = null;
@@ -1030,7 +1037,7 @@
     if (bright !== sentBright || speed !== sentSpeed || mix !== sentMix) {
       if (sentBright != null && Math.abs(bright - sentBright) < 2 && speed === sentSpeed && mix === sentMix) return;
       const f = L.slice(); f[9] = bright; f[14] = speed;
-      for (let i = 0; i < 4; i++) f[5 + i] = Math.round(L[5 + i] + (RED[i] - L[5 + i]) * mix);
+      const rc = rampColor([L[5], L[6], L[7], L[8]], mix); for (let i = 0; i < 4; i++) f[5 + i] = rc[i];
       sentBright = bright; sentSpeed = speed; sentMix = mix; liveSend(f);
     }
   }
@@ -1269,7 +1276,7 @@
     const f = L.slice();
     if (sentBright != null) f[9] = sentBright;
     if (sentSpeed != null) f[14] = sentSpeed;
-    if (sentMix) for (let i = 0; i < 4; i++) f[5 + i] = Math.round(L[5 + i] + (RED[i] - L[5 + i]) * sentMix);
+    if (sentMix) { const rc = rampColor([L[5], L[6], L[7], L[8]], sentMix); for (let i = 0; i < 4; i++) f[5 + i] = rc[i]; }
     liveSend(f);
   }, 700);
 
@@ -1379,6 +1386,7 @@
     $('themeBtn').textContent = 'Theme: ' + THEME_NAME[theme];
     document.querySelector('meta[name=theme-color]').content = THEME_BG[theme];
     resegAll(); lastPk = -2; illuminate();
+    $('rfL').textContent = theme === 'lapiz' ? 'Pink from' : 'Red from'; $('rtL').textContent = theme === 'lapiz' ? 'Full gold' : 'Full red';
   }
   $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); themeLight(); toast('Theme: ' + THEME_NAME[theme]); };
   applyTheme();
