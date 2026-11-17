@@ -106,6 +106,28 @@
   .tabs button { padding:13px; font-size:13px; letter-spacing:.18em; }
   .tabs button.cur { border-color:var(--mag); color:#fff; background:rgba(var(--ac),.12); box-shadow:0 0 12px rgba(var(--ac),.35), inset 0 -2px 0 var(--mag); }
 
+  /* ===== Lapiz theme: Outrun layout, Golf R Lapiz blue frames, nav-map palette (teal roads, crimson blocks, amber labels) ===== */
+  body.lapiz { --bg:#03040b; --card:#070a18; --line:#16245a; --text:#e6f1ff; --dim:#6f86b8;
+               --ro:64,226,214; --ac:226,24,84; --lapiz:31,76,196; --amber:#ffb020;
+               --aqua:rgb(var(--ro)); --aquaDim:rgba(var(--ro),.07); --mag:rgb(var(--ac)); --acc:var(--mag); --acc2:var(--mag); --ok:var(--aqua); }
+  body.lapiz .hero { background:linear-gradient(180deg,#081030 0%,#04060f 100%); border-color:#1d3478;
+                     box-shadow:inset 0 0 0 1px rgba(var(--lapiz),.25), inset 0 30px 60px -40px rgba(var(--lapiz),.55); }
+  body.lapiz .g, body.lapiz .tsec, body.lapiz .ctl, body.lapiz .chip, body.lapiz button { border-color:#1a2c66; }
+  body.lapiz .lbl, body.lapiz .g .l, body.lapiz .tsec h3 span, body.lapiz .ctl .t { color:#7d93c8; }
+  body.lapiz .lbl b, body.lapiz .ctl .t b { color:var(--amber); }
+  body.lapiz .tsec h3 { color:var(--amber); }
+  body.lapiz .g .sub { color:var(--amber); }
+  body.lapiz #btnConnect { border-color:rgb(var(--lapiz)); box-shadow:0 0 12px rgba(var(--lapiz),.55); }
+  body.lapiz .tabs button.cur, body.lapiz button.on { background:rgba(var(--lapiz),.28); border-color:rgb(var(--lapiz)); color:#fff;
+                     box-shadow:0 0 12px rgba(var(--lapiz),.55), inset 0 -2px 0 rgb(var(--lapiz)); }
+  body.lapiz .tach i.z1 { background:rgba(255,176,32,.10); }
+  body.lapiz .tach i.lit.z1 { background:var(--amber); box-shadow:0 0 6px rgba(255,176,32,.6); }
+  body.lapiz .tach i.lit.z2 { background:rgb(var(--ac)); box-shadow:0 0 8px rgba(var(--ac),.8); }
+  body.lapiz .sbar i.hi { background:rgba(var(--ac),.12); }
+  body.lapiz .summon .base .tri { stroke:rgba(var(--lapiz),.75); }
+  body.lapiz .summon .lit .tri { stroke:rgb(70,120,255); }
+  body.lapiz .toast { border-color:rgb(var(--lapiz)); }
+
   /* ===== Uno theme: red-orange LCD, plain labels, vertical bars, car outline ===== */
   body.uno { --bg:#040202; --card:#0a0504; --line:#2b1410; --text:#f3e6e1; --dim:#8a6f68;
              --ro:255,62,28; --ac:255,128,48; --warn:#ffc400; --bad:#ffffff;
@@ -329,7 +351,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v39 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v41 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -1123,14 +1145,15 @@
       setTimeout(() => el.classList.remove('glitch'), 680); glitchLoop();
     }, wait);
   })();
-  const THEMES = ['outrun', 'uno'];
+  const THEMES = ['outrun', 'lapiz', 'uno'];
+  const THEME_NAME = { outrun:'Outrun', lapiz:'Lapiz', uno:'Uno' }, THEME_BG = { outrun:'#06050b', lapiz:'#03040b', uno:'#040202' };
   let theme = store.get('dd_theme', 'outrun');
   function applyTheme() {
     THEMES.forEach(t => document.body.classList.toggle(t, t === theme));
-    $('themeBtn').textContent = 'Theme: ' + (theme === 'uno' ? 'Uno' : 'Outrun');
-    document.querySelector('meta[name=theme-color]').content = theme === 'uno' ? '#040202' : '#06050b';
+    $('themeBtn').textContent = 'Theme: ' + THEME_NAME[theme];
+    document.querySelector('meta[name=theme-color]').content = THEME_BG[theme];
   }
-  $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); toast('Theme: ' + (theme === 'uno' ? 'Uno' : 'Outrun')); };
+  $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); toast('Theme: ' + THEME_NAME[theme]); };
   applyTheme();
 
   function nightCheck() { const h = new Date().getHours(); document.body.classList.toggle('night', h >= 19 || h < 7); }
