@@ -270,6 +270,7 @@
                --aqua:rgb(var(--ro)); --aquaDim:rgba(var(--ro),.07); --mag:rgb(var(--ac)); --acc:var(--mag); --acc2:var(--mag); --ok:var(--aqua);
                --glow:drop-shadow(0 0 5px rgba(150,180,255,.45)); }
   body.lapiz::after { opacity:.10; }
+  body.lapiz, body.lapiz button { font-variant-numeric:lining-nums tabular-nums; font-feature-settings:'lnum' 1, 'tnum' 1; }
   body.lapiz button, body.lapiz .chip { font-weight:600; letter-spacing:.14em; }
   body.lapiz .hero { isolation:isolate; border-color:rgba(var(--gold),.32);
                      background:radial-gradient(120% 85% at 28% 16%, #142b7e 0%, #0a1750 40%, #050b29 76%, #03071a 100%);
@@ -404,7 +405,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v44 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v45 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
