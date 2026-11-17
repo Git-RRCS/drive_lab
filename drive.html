@@ -10,7 +10,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   /* Outrun / 80s digital cluster. Aqua = readouts, magenta = frames/accents, amber = caution, red = alarm. */
   :root { --bg:#06050b; --card:#0b0916; --card2:#0e0b1c; --line:#241c3d; --text:#e9e6ff; --dim:#7c74a8;
@@ -356,6 +356,97 @@
   body.lapiz .sbar i.lit.hi { background:rgb(120,200,255); box-shadow:0 0 6px rgba(70,165,255,.7); }
   body.lapiz .tabs button.cur, body.lapiz button.on { box-shadow:0 0 12px rgba(70,165,255,.45), inset 0 -2px 0 rgb(110,195,255); }
   body.lapiz #btnConnect { border-color:rgb(110,195,255); box-shadow:0 0 10px rgba(70,165,255,.4); }
+
+  /* ===== Redshift: a red city grid at night. Red = structure, cyan = live readouts, yellow = labels that matter, bright blinking red = alarm only ===== */
+  .sigcard { display:contents; } .cardhd, .cardft, .cmap, .hexcol { display:none; }
+  body.redshift { --bg:#0a0204; --card:rgba(46,8,13,.62); --line:#5c1a22; --text:#f3e4e4; --dim:#c4525c;
+                  --ro:96,238,238; --ac:255,86,86; --yel:240,208,74; --warn:#f0d04a; --bad:#ff2424;
+                  --serif:'Rajdhani','DejaVu Sans Condensed',system-ui,sans-serif;
+                  --aqua:rgb(var(--ro)); --aquaDim:rgba(var(--ro),.07); --mag:rgb(var(--ac)); --acc:var(--mag); --acc2:var(--mag); --ok:var(--aqua);
+                  --glow:drop-shadow(0 0 5px rgba(var(--ro),.55));
+                  --clip:polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
+  body.redshift { background:radial-gradient(120% 70% at 50% 0%, #2a0609 0%, #0a0204 60%); }
+  body.redshift::after { opacity:.28; }
+  body.redshift button, body.redshift .chip { font:600 14px var(--serif); letter-spacing:.14em; border-radius:0; clip-path:var(--clip);
+                  background:linear-gradient(90deg, rgba(70,12,18,.9), rgba(40,6,10,.75)); border:1px solid rgba(var(--ac),.45); color:rgb(var(--ro)); }
+  body.redshift .chip { font-size:12px; color:rgba(var(--ro),.75); }
+  body.redshift .dot { border-radius:0; transform:rotate(45deg); background:#4a1016; }
+  body.redshift .dot.ok { background:rgb(var(--ro)); box-shadow:0 0 6px rgb(var(--ro)); } body.redshift .dot.wait { background:var(--warn); }
+  body.redshift #btnConnect { color:#fff; background:rgba(var(--ac),.5); border-color:rgb(var(--ac)); box-shadow:none; }
+  body.redshift .tabs button { position:relative; padding-left:26px; }
+  body.redshift .tabs button::before { content:''; position:absolute; left:12px; top:50%; width:8px; height:8px; margin-top:-4px; transform:rotate(45deg); border:1.5px solid rgb(var(--ro)); }
+  body.redshift .tabs button.cur { background:linear-gradient(90deg, rgba(var(--ac),.75), rgba(var(--ac),.45)); color:#fff; border-color:rgb(var(--ac)); box-shadow:none; }
+  body.redshift .tabs button.cur::before { border-color:#fff; background:#fff; }
+  body.redshift button.on { background:rgba(var(--ro),.14); border-color:rgb(var(--ro)); color:#fff; box-shadow:none; }
+  /* hero: map panel with cut corners */
+  body.redshift .hero { isolation:isolate; border-radius:0; clip-path:var(--clip); border:1px solid rgba(var(--ac),.55);
+                        background:#070103; box-shadow:inset 0 0 0 1px rgba(var(--ac),.12), inset 0 0 70px rgba(0,0,0,.75); }
+  body.redshift .hero::before { z-index:-1; height:100%;
+        background:radial-gradient(70% 34% at 50% 30%, rgba(7,1,3,.88) 0%, rgba(7,1,3,.55) 60%, transparent 100%),
+                   radial-gradient(60% 22% at 50% 58%, rgba(7,1,3,.7) 0%, transparent 100%),
+                   linear-gradient(180deg, rgba(7,1,3,.35), rgba(7,1,3,.1) 50%, rgba(7,1,3,.5)); }
+  body.redshift .cmap { display:block; position:absolute; inset:0; z-index:-2; overflow:hidden; pointer-events:none; opacity:.62; }
+  body.redshift .cmapin { position:absolute; left:-60%; top:-40%; width:220%; height:180%; background-repeat:repeat;
+        transform:perspective(700px) rotateX(38deg) rotateZ(-32deg); transform-origin:50% 55%; }
+  body.night.redshift .cmap { opacity:.45; }
+  body.redshift .lbl { font:600 13px var(--serif); letter-spacing:.2em; color:rgb(var(--ac)); }
+  body.redshift .lbl b { color:rgb(var(--yel)); font-weight:700; }
+  body.redshift .tachscale, body.redshift .scale { font:600 11px var(--serif); color:rgba(var(--ac),.75); }
+  /* parallelogram segments */
+  body.redshift .tach, body.redshift .sbar { gap:3px; }
+  body.redshift .tach i, body.redshift .sbar i { transform:skewX(-20deg); border-radius:0; }
+  body.redshift .tach i:not(.lit), body.redshift .sbar i:not(.lit):not(.pk) { background:rgba(var(--ac),.14); }
+  body.redshift .tach i.z1:not(.lit) { background:rgba(var(--yel),.16); } body.redshift .tach i.z2:not(.lit) { background:rgba(255,40,40,.24); }
+  body.redshift .tach i.lit, body.redshift .sbar i.lit { background:rgb(var(--ro)); box-shadow:0 0 6px rgba(var(--ro),.65); }
+  body.redshift .tach i.lit.z1 { background:var(--warn); box-shadow:0 0 6px rgba(var(--yel),.6); }
+  body.redshift .tach i.lit.z2 { background:#fff; box-shadow:0 0 6px #fff, 0 0 12px rgba(255,40,40,.9); }
+  body.redshift .sbar i.hi:not(.lit):not(.pk) { background:rgba(var(--yel),.14); }
+  body.redshift .sbar i.lit.hi { background:rgb(var(--yel)); box-shadow:0 0 6px rgba(var(--yel),.7); }
+  body.redshift .peakline .seg { color:rgb(var(--yel)); filter:drop-shadow(0 0 4px rgba(var(--yel),.5)); }
+  body.redshift #tabGauges .hero { justify-content:space-between; }
+  body.redshift .val { margin:clamp(4px,1vh,16px) auto 2px; width:min(96%, 560px, 34vh); }
+  body.redshift .tach { height:clamp(36px, 6vh, 64px); }
+  /* type numerals */
+  .seg .tx { fill:currentColor; font-family:var(--serif); font-weight:600; }
+  .seg .tx.gh { opacity:.25; }
+  /* connection card around the sigil */
+  body.redshift .summon { flex:1 1 0; min-height:128px; margin-top:clamp(4px,1vh,12px); }
+  body.redshift .sigcard { display:flex; flex-direction:column; align-items:center; justify-content:space-between; flex:0 0 auto; width:min(44%, 200px); max-height:230px;
+        padding:6px 8px; border:1px solid rgba(var(--ac),.45); background:linear-gradient(180deg, rgba(70,10,16,.55), rgba(20,3,6,.7)); clip-path:var(--clip);
+        box-shadow:inset 0 0 18px rgba(var(--ac),.12); }
+  body.redshift .sigcard .sig { max-width:100%; max-height:none; flex:1 1 0; min-height:0; height:auto; width:100%; }
+  body.redshift .cardhd { display:flex; justify-content:space-between; width:100%; font:600 8.5px var(--serif); letter-spacing:.14em; color:rgba(var(--ac),.8); border-bottom:1px solid rgba(var(--ac),.3); padding-bottom:3px; }
+  body.redshift .cardft { display:block; font:700 15px var(--serif); letter-spacing:.06em; color:rgb(var(--ro)); text-shadow:0 0 6px rgba(var(--ro),.5); padding-top:2px; }
+  body.redshift .summon .base .tri { stroke:rgba(var(--ac),.45); }
+  body.redshift .summon .base .st { stroke:rgba(var(--ac),.4); }
+  body.redshift .summon .lit { filter:drop-shadow(0 0 calc(2px + var(--b) * 5px) rgba(var(--ro),.8)); }
+  body.redshift .summon .lit .tr, body.redshift .summon .lit .cap { stroke:rgb(var(--ro)); }
+  body.redshift .summon .lit .tri { stroke:rgb(var(--yel)); }
+  body.redshift .summon.full .sigcard { border-color:rgb(var(--ro)); box-shadow:inset 0 0 22px rgba(var(--ro),.25), 0 0 0 1px rgba(var(--ro),.4); }
+  /* hex columns replace the runes */
+  body.redshift .wall svg { display:none; }
+  body.redshift .wall { opacity:1; display:flex; align-items:center; }
+  body.redshift .hexcol { display:block; margin:0; width:100%; font:500 9.5px/1.32 ui-monospace,'DejaVu Sans Mono',monospace; letter-spacing:.06em; color:rgba(var(--ac),.5); white-space:pre; text-align:center; overflow:hidden; }
+  body.redshift .hexcol b { font-weight:500; color:#04181a; background:rgb(var(--ro)); box-shadow:0 0 6px rgba(var(--ro),.7); }
+  body.redshift .hexcol i { font-style:normal; color:rgba(var(--ro),.85); }
+  body.night.redshift .hexcol { color:rgba(var(--ac),.38); }
+  body.redshift .summon.glitch .wall { animation:wallflash .62s steps(1) 1; }
+  /* lamps: menu buttons */
+  body.redshift .lamps span { font:700 10px var(--serif); letter-spacing:.12em; border-radius:0; clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%);
+        border:1px solid rgba(var(--ac),.32); color:rgba(var(--ro),.32); background:rgba(40,6,10,.7); }
+  body.redshift .lamps span.on { background:rgb(var(--ro)); border-color:rgb(var(--ro)); color:#03181a; box-shadow:0 0 8px rgba(var(--ro),.6); }
+  /* gauge tiles */
+  body.redshift .g { border-radius:0; clip-path:var(--clip); background:linear-gradient(180deg, rgba(56,9,14,.85), rgba(24,4,7,.9)); border:1px solid rgba(var(--ac),.4); }
+  body.redshift .g .l { font:600 11px var(--serif); letter-spacing:.1em; white-space:nowrap; color:rgb(var(--ac)); }
+  body.redshift .g .sub { color:rgb(var(--yel)); font-family:var(--serif); }
+  body.redshift .tsec, body.redshift .ctl { border-radius:0; clip-path:var(--clip); background:rgba(40,6,10,.7); border-color:rgba(var(--ac),.4); }
+  body.redshift .tsec h3 { color:rgb(var(--ac)); font-family:var(--serif); font-size:13px; }
+  body.redshift .pair .v, body.redshift .cyl .v { font-family:var(--serif); }
+  body.redshift .foot, body.redshift #themeBtn { font:600 11px var(--serif); letter-spacing:.08em; color:rgba(var(--ac),.75); }
+  body.redshift #themeBtn { clip-path:none; background:none; border:none; padding:0; text-decoration:underline; }
+  body.redshift .toast { border-color:rgb(var(--ac)); background:#1c0408; border-radius:0; }
+  body.redshift .alarm { background:rgba(10,0,2,.94); border:3px solid var(--bad); }
+  @media (max-height:815px) { body.redshift .summon { min-height:110px; } }
 </style>
 </head>
 <body>
@@ -368,7 +459,7 @@
 </div>
 
 <section class="tab" id="tabGauges">
-<div class="hero" id="hero"><svg class="topo" id="topo"><path id="topoA"/><path id="topoB"/><path id="topoC"/><g id="rip"></g></svg>
+<div class="hero" id="hero"><svg class="topo" id="topo"><path id="topoA"/><path id="topoB"/><path id="topoC"/><g id="rip"></g></svg><div class="cmap"><div class="cmapin" id="cmap"></div></div>
   <div class="lbl" style="display:flex;justify-content:space-between"><span>RPM <b>×1000</b></span><span id="rpmLimitLbl"></span></div>
   <div class="tach" id="tach"></div>
   <div class="tachscale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span></div>
@@ -377,11 +468,11 @@
   <div class="sbar" id="sbar"></div>
   <div class="scale"><span>0</span><span>10</span><span>20</span><span>30</span></div>
   <div class="peakline"><span class="lbl">Peak</span><span class="seg" id="peakVal"></span><span id="hz"></span></div>
-  <div class="summon" id="summon"><div class="wall" id="wallL"></div><svg class="sig" viewBox="0 0 100 96">
+  <div class="summon" id="summon"><div class="wall" id="wallL"></div><div class="sigcard"><div class="cardhd"><span>LINK 07E0 · 07E8</span><span id="cardHz">IDLE</span></div><svg class="sig" viewBox="0 0 100 96">
     <defs><linearGradient id="goldLeaf" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="90" y2="96"><stop offset="0" stop-color="#fff0c2"/><stop offset=".35" stop-color="#e2b654"/><stop offset=".62" stop-color="#b07a22"/><stop offset="1" stop-color="#f6d580"/></linearGradient></defs>
     <g class="base"><path class="tri" d="M6,8 L94,8 L50,92 Z"/><path class="tri2" d="M13.5,12.2 L86.5,12.2 L50,82.5 Z"/><g class="orn"><circle cx="6" cy="8" r="1.7"/><circle cx="94" cy="8" r="1.7"/><circle cx="50" cy="92" r="1.7"/><circle cx="50" cy="8" r="1"/><circle cx="28" cy="50" r="1"/><circle cx="72" cy="50" r="1"/></g><line class="st" data-i="0" pathLength="1" x1="66" y1="21" x2="50" y2="37"/><line class="st" data-i="1" pathLength="1" x1="50" y1="37" x2="34" y2="21"/><line class="st" data-i="2" pathLength="1" x1="34" y1="21" x2="50" y2="21"/><line class="st" data-i="3" pathLength="1" x1="50" y1="21" x2="50" y2="53"/><line class="st" data-i="4" pathLength="1" x1="50" y1="53" x2="66" y2="21"/><line class="st" data-i="5" pathLength="1" x1="66" y1="21" x2="34" y2="37"/><line class="st" data-i="6" pathLength="1" x1="34" y1="37" x2="34" y2="53"/><circle class="st" cx="66" cy="21" r="3.6"/><line class="st" x1="28" y1="53" x2="40" y2="53"/></g>
     <g class="lit"><path class="tri" pathLength="1" d="M6,8 L94,8 L50,92 Z"/><line class="tr" data-i="0" pathLength="1" x1="66" y1="21" x2="50" y2="37"/><line class="tr" data-i="1" pathLength="1" x1="50" y1="37" x2="34" y2="21"/><line class="tr" data-i="2" pathLength="1" x1="34" y1="21" x2="50" y2="21"/><line class="tr" data-i="3" pathLength="1" x1="50" y1="21" x2="50" y2="53"/><line class="tr" data-i="4" pathLength="1" x1="50" y1="53" x2="66" y2="21"/><line class="tr" data-i="5" pathLength="1" x1="66" y1="21" x2="34" y2="37"/><line class="tr" data-i="6" pathLength="1" x1="34" y1="37" x2="34" y2="53"/><circle class="cap" cx="66" cy="21" r="3.6"/><line class="cap" x1="28" y1="53" x2="40" y2="53"/></g>
-  </svg><div class="wall" id="wallR"></div></div>
+  </svg><div class="cardft" id="cardPct">0%</div></div><div class="wall" id="wallR"></div></div>
   <div class="lamps" id="lamps">
     <span id="lpA">15 psi</span><span id="lpB">22 psi</span><span id="lpShift">Shift</span><span id="lpHot">Hot</span><span id="lpMode">Mode</span><span id="lpWarm">Warm</span>
   </div>
@@ -424,7 +515,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v52 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v53 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -561,10 +652,16 @@
     return `<svg viewBox="0 -6 ${W} ${SH + 12}">${parts.join('')}</svg>`;
   }
   const segCache = new Map(), segCells = new Map();
+  function txtSVG(text, cells) {
+    const W = cells * PITCH + 8, t = String(text).trim(), n = Math.max(1, t.replace('.', '').length + (t.includes('.') ? .45 : 0));
+    const fs = Math.min(SH * 1.3, W / (n * .56));
+    return `<svg viewBox="0 -6 ${W} ${SH + 12}"><text class="tx${t ? '' : ' gh'}" x="${W / 2}" y="${SH - 4}" text-anchor="middle" font-size="${fs.toFixed(1)}">${t || '--'}</text></svg>`;
+  }
   function setSeg(id, text, cells) {
-    const lap = document.body.classList.contains('lapiz') && [...String(text)].every(c => NUM[c] || c === '.' || c === ' ');
-    const key = (lap ? 'n|' : 's|') + text; if (segCache.get(id) === key) return; segCache.set(id, key); segCells.set(id, cells);
-    $(id).innerHTML = lap ? numSVG(text, cells) : segSVG(text, cells);
+    const cl = document.body.classList;
+    const mode = cl.contains('redshift') ? 't' : cl.contains('lapiz') && [...String(text)].every(c => NUM[c] || c === '.' || c === ' ') ? 'n' : 's';
+    const key = mode + '|' + text; if (segCache.get(id) === key) return; segCache.set(id, key); segCells.set(id, cells);
+    $(id).innerHTML = mode === 't' ? txtSVG(text, cells) : mode === 'n' ? numSVG(text, cells) : segSVG(text, cells);
   }
   function resegAll() { for (const [id, key] of [...segCache]) { segCache.delete(id); setSeg(id, key.slice(2), segCells.get(id)); } }
 
@@ -627,7 +724,7 @@
     }
     if (!n) throw new Error('OBD service not found');
     obdW = w; await n.startNotifications();
-    n.addEventListener('characteristicvaluechanged', e => { buf += new TextDecoder().decode(e.target.value); if (buf.includes('>')) { const t = buf.replace(/>/g,'').trim(); buf = ''; waiter && waiter(t); } });
+    n.addEventListener('characteristicvaluechanged', e => { buf += new TextDecoder().decode(e.target.value); if (buf.includes('>')) { const t = buf.replace(/>/g,'').trim(); buf = ''; hexFeed(t); waiter && waiter(t); } });
     for (const c of ['ATZ','ATE0','ATL0','ATS0','ATH0','ATSP6','ATSH7E0','ATCRA7E8','ATAT2']) await cmd(c, 5000).catch(() => {});
     const b = await q(['33']).catch(() => ({})); if (b['33']) baro = b['33'][0];
     // Does the engine computer offer standard oil temp (PID 5C)? Check the supported-PIDs bitmap for 41-60.
@@ -982,6 +1079,7 @@
       const isRed = rpm >= red; shiftState = isRed ? 2 : rpm >= amber ? 1 : 0;
       if (isRed && !wasRed && now - lastShiftFlash > 3000) {
         if (theme === 'lapiz' && driftOn) { lastShiftFlash = now; lightCue([255,176,40], 2, 70, 60); }   // gold flicker
+        else if (theme === 'redshift' && cueShift) { lastShiftFlash = now; lightCue([0,210,255], 2, 70, 60); }   // cyan double
         else if (cueShift) { lastShiftFlash = now; lightCue([255,0,0], 1, 250); }
       }
       wasRed = isRed;
@@ -1007,7 +1105,13 @@
   const RED = [220,0,18,0];         // deep red, a brighter cousin of the head unit's oxblood
   // Lapiz ramp for the starlights: base -> pink at the midpoint -> gold at full (LED-tuned values)
   const LZ_PINK = [255,0,150,0], LZ_GOLD = [255,140,0,0];
+  // Redshift ramp: red -> magenta -> cyan at full (the readout color takes over the car)
+  const RS_RED = [255,0,28,0], RS_MAG = [255,0,190,0], RS_CYAN = [0,210,255,0];
   function rampColor(base, mix) {
+    if (typeof theme !== 'undefined' && theme === 'redshift') {
+      if (mix <= .5) { const t = mix / .5; return base.map((v, i) => Math.round(v + (RS_MAG[i] - v) * t)); }
+      const t = (mix - .5) / .5; return RS_MAG.map((v, i) => Math.round(v + (RS_CYAN[i] - v) * t));
+    }
     if (typeof theme === 'undefined' || theme !== 'lapiz') return base.map((v, i) => Math.round(v + (RED[i] - v) * mix));
     if (mix <= .5) { const t = mix / .5; return base.map((v, i) => Math.round(v + (LZ_PINK[i] - v) * t)); }
     const t = (mix - .5) / .5; return LZ_PINK.map((v, i) => Math.round(v + (LZ_GOLD[i] - v) * t));
@@ -1171,6 +1275,7 @@
     trEls.forEach((el, i) => el.style.strokeDashoffset = (1 - Math.max(0, Math.min(1, sumEnv - i))).toFixed(3));
     $('summon').style.setProperty('--b', (sumEnv / 7).toFixed(2));
     const full = sumEnv >= 6.95; if (full !== sumFull) { sumFull = full; $('summon').classList.toggle('full', full); }
+    const pct = Math.round(sumEnv / 7 * 100) + '%'; if ($('cardPct').textContent !== pct) $('cardPct').textContent = pct;
     illuminate();
   }
   // Lapiz: runes light top-down in both margins as boost builds
@@ -1266,8 +1371,8 @@
       setTimeout(() => el.classList.remove('glitch'), 680); glitchLoop();
     }, wait);
   })();
-  const THEMES = ['outrun', 'lapiz', 'uno'];
-  const THEME_NAME = { outrun:'Outrun', lapiz:'Lapiz', uno:'Uno' }, THEME_BG = { outrun:'#06050b', lapiz:'#03040b', uno:'#040202' };
+  const THEMES = ['outrun', 'lapiz', 'uno', 'redshift'];
+  const THEME_NAME = { outrun:'Outrun', lapiz:'Lapiz', uno:'Uno', redshift:'Redshift' }, THEME_BG = { outrun:'#06050b', lapiz:'#03040b', uno:'#040202', redshift:'#0a0204' };
   let theme = store.get('dd_theme', 'outrun');
   let driftOn = store.get('dd_drift', false);
   function setDrift(v) { driftOn = v; store.set('dd_drift', v); }
@@ -1276,7 +1381,7 @@
   const LAPIZ_RGB2 = [72, 24, 255];      // the indigo end of the drift
   function themeLight() {
     setDrift(theme === 'lapiz');
-    const c = theme === 'lapiz' ? [...LAPIZ_RGB, 0] : theme === 'uno' ? [0, 0, 0, 255] : null;
+    const c = theme === 'lapiz' ? [...LAPIZ_RGB, 0] : theme === 'uno' ? [0, 0, 0, 255] : theme === 'redshift' ? [...RS_RED] : null;
     if (!c) return;
     L[1] = 0xff; [L[5], L[6], L[7], L[8]] = c; lightSend();
   }
@@ -1292,6 +1397,72 @@
     if (sentMix) { const rc = rampColor([L[5], L[6], L[7], L[8]], sentMix); for (let i = 0; i < 4; i++) f[5 + i] = rc[i]; }
     liveSend(f);
   }, 700);
+
+  // ----- Redshift: a tileable night-city grid (red blocks, cyan streets, one diagonal avenue), panned like you're driving it -----
+  let cityBuilt = false;
+  function buildCityMap() {
+    if (cityBuilt) return; cityBuilt = true;
+    const T = 512, cv = document.createElement('canvas'); cv.width = cv.height = T; const g = cv.getContext('2d');
+    let seed = 1871; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    g.fillStyle = '#080103'; g.fillRect(0, 0, T, T);
+    const cuts = n => { const a = [0]; while (a[a.length - 1] < T - 70) a.push(a[a.length - 1] + 46 + Math.floor(rnd() * 40)); return a; };
+    const xs = cuts(), ys = cuts(), major = new Set([0]);
+    // blocks of buildings, with a fake extruded side
+    for (let i = 0; i < xs.length; i++) for (let j = 0; j < ys.length; j++) {
+      const x0 = xs[i] + 7, x1 = (xs[i + 1] ?? T) - 7, y0 = ys[j] + 7, y1 = (ys[j + 1] ?? T) - 7;
+      if (rnd() < .07) continue;                                  // empty lot / park
+      for (let y = y0; y < y1 - 4;) {
+        const h = Math.min(y1 - y, 7 + Math.floor(rnd() * 12));
+        for (let x = x0; x < x1 - 4;) {
+          const w = Math.min(x1 - x, 6 + Math.floor(rnd() * 14));
+          if (rnd() > .1) {
+            const r = 150 + Math.floor(rnd() * 70);
+            g.fillStyle = `rgb(${r * .45 | 0},4,${r * .1 | 0})`; g.fillRect(x + 2, y + 2, w - 3, h - 3);
+            g.fillStyle = `rgb(${r},${8 + rnd() * 10 | 0},${36 + rnd() * 30 | 0})`; g.fillRect(x, y, w - 3, h - 3);
+          }
+          x += w;
+        }
+        y += h;
+      }
+    }
+    const road = (x0, y0, x1, y1, w) => {
+      for (const [dx, dy] of [[0,0],[T,0],[-T,0],[0,T],[0,-T],[T,T],[-T,-T]]) {
+        g.lineWidth = w; g.strokeStyle = 'rgba(70,215,215,.92)'; g.beginPath(); g.moveTo(x0 + dx, y0 + dy); g.lineTo(x1 + dx, y1 + dy); g.stroke();
+        if (w > 5) { g.lineWidth = 1; g.strokeStyle = 'rgba(8,40,44,.9)'; g.setLineDash([6, 6]); g.beginPath(); g.moveTo(x0 + dx, y0 + dy); g.lineTo(x1 + dx, y1 + dy); g.stroke(); g.setLineDash([]); }
+      }
+    };
+    xs.forEach((x, i) => road(x, 0, x, T, i === 0 || rnd() < .25 ? 9 : 4.5));
+    ys.forEach((y, i) => road(0, y, T, y, i === 0 || rnd() < .25 ? 9 : 4.5));
+    road(0, 0, T, T, 11);                                          // the diagonal avenue wraps cleanly at 45°
+    $('cmap').style.backgroundImage = `url(${cv.toDataURL()})`;
+    $('cmap').style.backgroundSize = T + 'px ' + T + 'px';
+  }
+  let mapY = 0, mapT = performance.now();
+  (function mapLoop() {
+    setTimeout(() => requestAnimationFrame(mapLoop), 50);
+    const now = performance.now(), dt = Math.min(.3, (now - mapT) / 1000); mapT = now;
+    if (theme !== 'redshift' || curTab !== 'g' || document.hidden) return;
+    mapY = (mapY + dt * (5 + Math.min(1, (liveRpm || 0) / 7000) * 70)) % 512;
+    $('cmap').style.backgroundPosition = `0px ${mapY.toFixed(1)}px`;
+  })();
+
+  // ----- Redshift: hex columns. The adapter's actual replies scroll by; one byte gets the cursor. Idle = slow synthetic traffic. -----
+  const hexLines = []; let hexLast = 0, hexDirty = true;
+  function hexFeed(t) {
+    const bytes = t.toUpperCase().replace(/[^0-9A-F]/g, '').match(/../g); if (!bytes) return;
+    for (let i = 0; i < bytes.length; i += 3) hexLines.push(bytes.slice(i, i + 3).join(' '));
+    while (hexLines.length > 40) hexLines.shift(); hexLast = Date.now(); hexDirty = true;
+  }
+  ['wallL', 'wallR'].forEach(id => { const pre = document.createElement('pre'); pre.className = 'hexcol'; pre.id = id + 'Hex'; $(id).appendChild(pre); });
+  setInterval(() => {
+    if (theme !== 'redshift' || curTab !== 'g' || document.hidden) return;
+    if (Date.now() - hexLast > 2000) { const b = () => (Math.random() * 256 | 0).toString(16).toUpperCase().padStart(2, '0'); hexLines.push([b(), b(), b()].join(' ')); while (hexLines.length > 40) hexLines.shift(); hexDirty = true; }
+    $('cardHz').textContent = Date.now() - hexLast < 2000 ? 'LIVE' : 'IDLE';
+    if (!hexDirty) return; hexDirty = false;
+    const rows = 10, L = hexLines.slice(-rows * 2), cur = Math.floor(Math.random() * L.length);
+    const fmt = (arr, off) => arr.map((ln, i) => i + off === cur ? ln.replace(/^(..)/, '<b>$1</b>') : (i + off) % 5 === 0 ? `<i>${ln}</i>` : ln).join('\n');
+    $('wallLHex').innerHTML = fmt(L.slice(0, rows), 0); $('wallRHex').innerHTML = fmt(L.slice(rows), rows);
+  }, 220);
 
   // ----- Lapiz: the ward. Glowing contour lines that swirl around the sigil and slowly reshape.
   //   blue   = healthy
@@ -1357,7 +1528,8 @@
     $('themeBtn').textContent = 'Theme: ' + THEME_NAME[theme];
     document.querySelector('meta[name=theme-color]').content = THEME_BG[theme];
     resegAll(); lastPk = -2; illuminate();
-    $('rfL').textContent = theme === 'lapiz' ? 'Pink from' : 'Red from'; $('rtL').textContent = theme === 'lapiz' ? 'Full gold' : 'Full red';
+    $('rfL').textContent = theme === 'lapiz' ? 'Pink from' : theme === 'redshift' ? 'Shift from' : 'Red from'; $('rtL').textContent = theme === 'lapiz' ? 'Full gold' : theme === 'redshift' ? 'Full cyan' : 'Full red';
+    if (theme === 'redshift') buildCityMap();
   }
   $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); themeLight(); toast('Theme: ' + THEME_NAME[theme]); };
   applyTheme();
