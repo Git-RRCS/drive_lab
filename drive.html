@@ -351,7 +351,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v42 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v43 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -1151,8 +1151,9 @@
   // Lapiz Blue on the fiber light (scaled up for LEDs, which render dark blues dimly)
   const LAPIZ_RGB = [20, 70, 255];
   function themeLight() {
-    if (theme !== 'lapiz') return;
-    L[1] = 0xff; [L[5], L[6], L[7], L[8]] = [...LAPIZ_RGB, 0]; lightSend();
+    const c = theme === 'lapiz' ? [...LAPIZ_RGB, 0] : theme === 'uno' ? [0, 0, 0, 255] : null;
+    if (!c) return;
+    L[1] = 0xff; [L[5], L[6], L[7], L[8]] = c; lightSend();
   }
   function applyTheme() {
     THEMES.forEach(t => document.body.classList.toggle(t, t === theme));
