@@ -325,8 +325,9 @@
   body.lapiz .flecks, body.lapiz .topo { display:block; }
   .topo { width:100%; height:100%; }
   .topo path, .topo circle { fill:none; stroke-linecap:round; }
-  #topoA { stroke-width:7; opacity:.07; filter:blur(3px); }
-  #topoB { stroke-width:1.1; opacity:.30; }
+  #topoA { stroke-width:6; opacity:.10; filter:blur(3px); }
+  #topoB { stroke-width:.9; }
+  #topoC { stroke-width:1.5; }
   .topo circle { stroke-width:1.4; }
   body.night .topo { opacity:.7; }
   .flecks i { position:absolute; width:var(--s); height:var(--s); border-radius:50%; background:rgb(var(--gold)); opacity:.26; transform:translate(-50%,-50%); }
@@ -351,7 +352,7 @@
 </div>
 
 <section class="tab" id="tabGauges">
-<div class="hero" id="hero"><svg class="topo" id="topo"><path id="topoA"/><path class="ix" id="topoB"/><g id="rip"></g></svg><div class="flecks" id="flecks"></div>
+<div class="hero" id="hero"><svg class="topo" id="topo"><path id="topoA"/><path id="topoB"/><path id="topoC"/><g id="rip"></g></svg><div class="flecks" id="flecks"></div>
   <div class="lbl" style="display:flex;justify-content:space-between"><span>RPM <b>×1000</b></span><span id="rpmLimitLbl"></span></div>
   <div class="tach" id="tach"></div>
   <div class="tachscale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span></div>
@@ -407,7 +408,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v46 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v47 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -1296,41 +1297,62 @@
     }, 1000 / perSec * (.5 + Math.random()));
   })();
 
-  // ----- Lapiz: the ward. Shimmering ribbons of light across the panel, blue at rest, turning gold as the sigil fills;
-  //        at full summon, rings ripple out from the sigil -----
-  let wardT = performance.now(), wardPh = 0, wardG = 0, lastRip = 0; const rips = [];
+  // ----- Lapiz: the ward. Glowing contour lines that swirl around the sigil and slowly reshape.
+  //   blue   = healthy
+  //   pink   = stressed: a temperature warning, or live timing being pulled (more pull, more pink, lines get unsettled)
+  //   gold   = full summon with nothing stressed: the unbreakable state; rings ripple out from the sigil -----
+  let wardT = performance.now(), wardPh = 0, wardG = 0, wardS = 0, lastRip = 0; const rips = [];
+  const W_BLUE = [70, 165, 255], W_PINK = [255, 64, 176], W_GOLD = [255, 206, 112];
+  const mixc = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+  function wardStress() {
+    let st = 0; for (const k in st8) st = Math.max(st, st8[k].level * .55);
+    const now = Date.now(); let pull = 0;
+    for (const did of ['200A','200B','200C','200D']) if (tvT[did] && now - tvT[did] < 1500 && tv[did] < 0) pull = Math.max(pull, -tv[did]);
+    return Math.min(1, Math.max(st, (pull - 1.5) / 3.5));
+  }
   (function wardLoop() {
     setTimeout(() => requestAnimationFrame(wardLoop), 60);
     if (theme !== 'lapiz' || curTab !== 'g' || document.hidden) return;
     const svg = $('topo'), w = svg.clientWidth, h = svg.clientHeight; if (!w || !h) return;
     const now = performance.now(), dt = Math.min(.3, (now - wardT) / 1000); wardT = now;
     const b = sumEnv / 7, night = document.body.classList.contains('night');
-    wardPh += dt * (.35 + b * 1.4);
-    wardG += ((b * b) - wardG) * .05;                                  // gold creeps in with boost
-    const col = [Math.round(110 + 145 * wardG), Math.round(150 + 55 * wardG), Math.round(255 - 145 * wardG)].join(',');
-    let d = ''; const N = 9, step = 12;
-    for (let k = 0; k < N; k++) {
-      const y0 = h * (.06 + .88 * k / (N - 1)), A = 9 + 7 * Math.sin(k * 1.7), f1 = 2 * Math.PI / (w * (.55 + .12 * (k % 3)));
-      for (let x = -step; x <= w + step; x += step) {
-        const y = y0 + A * Math.sin(f1 * x - wardPh * (1 + .15 * k) + k) + 4 * Math.sin(f1 * 2.3 * x + wardPh * .8 + k * 2.1) * (1 + b);
-        d += (x < 0 ? 'M' : 'L') + x + ',' + y.toFixed(1);
+    const sT = wardStress(); wardS += (sT - wardS) * (sT > wardS ? .25 : .03);           // stress: fast in, slow out
+    wardG += ((sumFull && wardS < .2 ? 1 : b * b * .5) - wardG) * .05;                    // gold creeps in, full at summon
+    wardPh += dt * (.12 + b * .5 + wardS * .9);
+    const col = mixc(mixc(W_BLUE, W_GOLD, wardG), W_PINK, wardS).join(',');
+    const sr = document.querySelector('#summon .sig').getBoundingClientRect(), hr = $('hero').getBoundingClientRect();
+    const cx = sr.left - hr.left + sr.width / 2, cy = sr.top - hr.top + sr.height * .42;
+    const maxR = Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy)) * 1.15, M = 90;
+    const sp = 17 * (1 - .3 * b), jit = wardS * .06;
+    let dA = '', dB = '';
+    for (let k = 1; k * sp * .75 < maxR; k++) {
+      let d = '';
+      const tw = .35 * Math.sin(wardPh * .6 + k * .09);                                   // slow swirl: inner and outer rings twist differently
+      for (let j = 0; j <= M; j++) {
+        const t = j / M * Math.PI * 2;
+        const n = .13 * Math.sin(2 * t + wardPh + k * .11 + tw) + .07 * Math.sin(3 * t - 1.2 * wardPh + k * .06)
+                + .04 * Math.sin(5 * t + 1.7 * wardPh - k * .05) + jit * Math.sin(11 * t + 7 * wardPh + k);
+        const r = k * sp * (1 + n);
+        d += (j ? 'L' : 'M') + (cx + r * Math.cos(t)).toFixed(1) + ',' + (cy + r * Math.sin(t) * 1.12).toFixed(1);
       }
+      if (k % 4 === 0) dB += d + 'Z'; else dA += d + 'Z';
     }
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    for (const id of ['topoA', 'topoB']) { const el = $(id); el.setAttribute('d', d); el.style.stroke = `rgb(${col})`; }
-    $('topoB').style.opacity = ((.22 + .22 * b) * (night ? .7 : 1)).toFixed(2);
-    // ripples from the sigil while fully summoned
-    if (sumFull && now - lastRip > 1600) {
-      lastRip = now; const sr = document.querySelector('#summon .sig').getBoundingClientRect(), hr = $('hero').getBoundingClientRect();
-      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      c.setAttribute('cx', sr.left - hr.left + sr.width / 2); c.setAttribute('cy', sr.top - hr.top + sr.height * .42);
-      $('rip').appendChild(c); rips.push({ c, t: now });
+    $('topoA').setAttribute('d', dA + dB); $('topoA').style.stroke = `rgb(${col})`;
+    $('topoB').setAttribute('d', dA); $('topoB').style.stroke = `rgb(${col})`;
+    $('topoC').setAttribute('d', dB); $('topoC').style.stroke = `rgb(${col})`;
+    const dim = night ? .65 : 1;
+    $('topoB').style.opacity = ((.25 + .12 * b + .12 * wardS) * dim).toFixed(2);
+    $('topoC').style.opacity = ((.38 + .2 * b + .15 * wardS) * dim).toFixed(2);
+    if (sumFull && wardS < .2 && now - lastRip > 1600) {
+      lastRip = now; const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', cx); c.setAttribute('cy', cy); $('rip').appendChild(c); rips.push({ c, t: now });
     }
     for (let i = rips.length - 1; i >= 0; i--) {
       const r = rips[i], age = (now - r.t) / 2600;
       if (age >= 1) { r.c.remove(); rips.splice(i, 1); continue; }
       r.c.setAttribute('r', (20 + age * Math.max(w, h) * .7).toFixed(1));
-      r.c.style.stroke = `rgba(255,214,130,${(.45 * (1 - age) * (night ? .7 : 1)).toFixed(3)})`;
+      r.c.style.stroke = `rgba(255,214,130,${(.45 * (1 - age) * dim).toFixed(3)})`;
     }
   })();
   function applyTheme() {
