@@ -10,7 +10,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   /* Outrun / 80s digital cluster. Aqua = readouts, magenta = frames/accents, amber = caution, red = alarm. */
   :root { --bg:#06050b; --card:#0b0916; --card2:#0e0b1c; --line:#241c3d; --text:#e9e6ff; --dim:#7c74a8;
@@ -535,6 +535,92 @@
   body.ambient .toast { border-color:rgb(var(--lap)); background:#111318; border-radius:10px; }
   body.ambient .alarm { background:rgba(8,8,10,.95); border:2px solid var(--bad); }
   @media (max-height:815px) { body.ambient .summon { min-height:80px; } body.ambient .dial { width:min(80%, 300px, 40vh); } }
+
+  /* ===== Sprinkles: bubbly candy theme. Cotton-candy colors, sprinkles + bubbles, chat pop-ups from a cast of candy friends.
+     Readouts stay big and clear; alarms stay serious. ===== */
+  .chat, .stk { display:none; }
+  body.sprinkles { --bg:#2b0f4a; --card:rgba(255,255,255,.16); --line:rgba(255,255,255,.35); --text:#fff; --dim:#ffe3f6;
+                   --ro:255,255,255; --ac:255,95,183; --warn:#ffd23f; --bad:#ff2d55;
+                   --serif:'Fredoka','DejaVu Sans',system-ui,sans-serif;
+                   --aqua:#fff; --aquaDim:rgba(255,255,255,.1); --mag:rgb(var(--ac)); --acc:var(--mag); --acc2:var(--mag); --ok:#7ef2c8; --glow:none;
+                   --c1:#ff5fb7; --c2:#7fd8ff; --c3:#b28dff; --c4:#ffd23f; --c5:#7ef2c8; }
+  body.sprinkles { background:linear-gradient(160deg, #ff7ac8 0%, #b07cff 45%, #6fc8ff 100%); }
+  body.night.sprinkles { background:linear-gradient(160deg, #8a2f6e 0%, #4b2f8f 45%, #23578c 100%); filter:none; }
+  body.sprinkles::after { display:none; }
+  body.sprinkles button, body.sprinkles .chip { font:600 15px var(--serif); letter-spacing:.04em; border-radius:22px; background:rgba(255,255,255,.22); border:2px solid rgba(255,255,255,.55); color:#fff; text-transform:none; box-shadow:0 3px 0 rgba(90,20,120,.35); }
+  body.sprinkles .chip { font-size:13px; }
+  body.sprinkles .dot { border-radius:50%; background:rgba(255,255,255,.4); } body.sprinkles .dot.ok { background:#7ef2c8; box-shadow:0 0 6px #7ef2c8; }
+  body.sprinkles #btnConnect { background:var(--c1); border-color:#fff; }
+  body.sprinkles .tabs button.cur, body.sprinkles button.on { background:#fff; color:#c2187a; border-color:#fff; box-shadow:0 3px 0 rgba(90,20,120,.45); }
+  body.sprinkles .hero { isolation:isolate; border-radius:28px; border:3px solid rgba(255,255,255,.6); background:linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.06));
+                         box-shadow:0 6px 0 rgba(90,20,120,.3), inset 0 0 40px rgba(255,255,255,.15); }
+  body.sprinkles .hero::before { display:none; }
+  body.sprinkles #tabGauges .hero { justify-content:space-between; }
+  body.sprinkles .rsbg { display:block; opacity:1; }
+  body.sprinkles .lbl { font:600 14px var(--serif); letter-spacing:.06em; color:#fff; text-transform:none; text-shadow:0 2px 0 rgba(120,30,140,.4); }
+  body.sprinkles .lbl b { color:#fff3a6; font-weight:700; }
+  body.sprinkles .tachscale, body.sprinkles .scale { font:600 12px var(--serif); color:rgba(255,255,255,.85); }
+  body.sprinkles .tach, body.sprinkles .sbar { gap:4px; }
+  body.sprinkles .tach i, body.sprinkles .sbar i { border-radius:20px; }
+  body.sprinkles .tach i:not(.lit), body.sprinkles .sbar i:not(.lit):not(.pk) { background:rgba(255,255,255,.28); }
+  body.sprinkles .tach i.lit, body.sprinkles .sbar i.lit { box-shadow:0 2px 0 rgba(90,20,120,.35); animation:boing .35s ease-out; }
+  body.sprinkles .tach i.lit:nth-child(5n+1), body.sprinkles .sbar i.lit:nth-child(5n+1) { background:var(--c1); }
+  body.sprinkles .tach i.lit:nth-child(5n+2), body.sprinkles .sbar i.lit:nth-child(5n+2) { background:var(--c2); }
+  body.sprinkles .tach i.lit:nth-child(5n+3), body.sprinkles .sbar i.lit:nth-child(5n+3) { background:var(--c3); }
+  body.sprinkles .tach i.lit:nth-child(5n+4), body.sprinkles .sbar i.lit:nth-child(5n+4) { background:var(--c4); }
+  body.sprinkles .tach i.lit:nth-child(5n+5), body.sprinkles .sbar i.lit:nth-child(5n+5) { background:var(--c5); }
+  body.sprinkles .tach i.lit.z2 { background:var(--bad) !important; box-shadow:0 0 8px rgba(255,45,85,.9); }
+  body.sprinkles .sbar i.pk { background:#fff; }
+  @keyframes boing { 0% { transform:scaleY(.6); } 60% { transform:scaleY(1.15); } 100% { transform:none; } }
+  body.sprinkles .val { margin:clamp(4px,1vh,14px) auto 2px; width:min(92%, 540px, 34vh); animation:float 3s ease-in-out infinite; }
+  @keyframes float { 50% { transform:translateY(-4px) rotate(-1deg); } }
+  body.sprinkles .seg { color:#fff; filter:drop-shadow(0 4px 0 rgba(120,30,140,.35)); }
+  body.sprinkles .seg .tx { font-weight:700; stroke:#c2187a; stroke-width:9; stroke-linejoin:round; paint-order:stroke; }
+  body.sprinkles .peakline .seg { color:#fff3a6; }
+  body.sprinkles .peakline .seg .tx { stroke:#8a3ffc; }
+  /* sigil: candy stripes + sparkle */
+  body.sprinkles .wall { display:none; }
+  body.sprinkles .summon { flex:1 1 0; min-height:110px; margin-top:clamp(4px,1vh,10px); }
+  body.sprinkles .summon .sig { max-height:170px; max-width:50%; animation:wiggle 4s ease-in-out infinite; }
+  @keyframes wiggle { 25% { transform:rotate(-3deg); } 75% { transform:rotate(3deg); } }
+  body.sprinkles .summon .base .tri { stroke:rgba(255,255,255,.65); stroke-width:3.5; stroke-dasharray:6 5; }
+  body.sprinkles .summon .base .st { stroke:rgba(255,255,255,.35); stroke-width:4; }
+  body.sprinkles .summon .lit { filter:drop-shadow(0 0 6px rgba(255,255,255,.9)); }
+  body.sprinkles .summon .lit .tr, body.sprinkles .summon .lit .cap { stroke:url(#candy); stroke-width:4.5; }
+  body.sprinkles .summon .lit .tri { stroke:url(#candy); stroke-width:3.5; }
+  body.sprinkles .summon.full .sig { animation:rainbow 1.6s linear infinite, wiggle 1s ease-in-out infinite; }
+  @keyframes rainbow { to { filter:hue-rotate(360deg); } }
+  body.sprinkles .summon.glitch .sig { animation:glitch .5s steps(1) 1; }
+  /* lamps: candy buttons */
+  body.sprinkles .lamps span { font:700 10px var(--serif); letter-spacing:.02em; border-radius:14px; border:2px solid rgba(255,255,255,.45); color:rgba(255,255,255,.75); background:rgba(255,255,255,.12); text-transform:none; }
+  body.sprinkles .lamps span.on { background:#fff; color:#c2187a; border-color:#fff; box-shadow:0 2px 0 rgba(90,20,120,.4); animation:boing .4s ease-out; }
+  /* tiles: gumdrops */
+  body.sprinkles .g { border-radius:24px; border:3px solid rgba(255,255,255,.55); background:rgba(255,255,255,.18); box-shadow:0 4px 0 rgba(90,20,120,.3); }
+  body.sprinkles .g:nth-child(1) { background:rgba(255,95,183,.45); } body.sprinkles .g:nth-child(2) { background:rgba(127,216,255,.45); }
+  body.sprinkles .g:nth-child(3) { background:rgba(178,141,255,.5); } body.sprinkles .g:nth-child(4) { background:rgba(126,242,200,.45); }
+  body.sprinkles .g .l { font:600 13px var(--serif); color:#fff; text-transform:none; letter-spacing:.02em; }
+  body.sprinkles .g .seg .tx { stroke-width:11; }
+  body.sprinkles .g .sub { color:#fff3a6; font-family:var(--serif); }
+  body.sprinkles .tsec, body.sprinkles .ctl { border-radius:20px; background:rgba(255,255,255,.18); border:2px solid rgba(255,255,255,.45); }
+  body.sprinkles .tsec h3 { color:#fff; font-family:var(--serif); }
+  body.sprinkles .foot, body.sprinkles #themeBtn { font:600 12px var(--serif); color:#fff; text-transform:none; letter-spacing:.03em; }
+  body.sprinkles .toast { border-radius:20px; background:#fff; color:#c2187a; border:none; font-family:var(--serif); }
+  /* chat pop-ups */
+  body.sprinkles .chat { display:flex; flex-direction:column; gap:6px; position:fixed; right:14px; top:60%; width:min(74vw, 290px); z-index:25; pointer-events:none; }
+  .msg { display:flex; gap:8px; align-items:flex-start; background:#fff; color:#3b1650; border-radius:18px 18px 18px 6px; padding:8px 10px; box-shadow:0 4px 0 rgba(90,20,120,.35), 0 8px 20px rgba(60,10,90,.25);
+         font:500 13px/1.25 var(--serif); animation:msgIn .45s cubic-bezier(.2,1.6,.4,1) both; }
+  .msg.out { animation:msgOut .35s ease-in forwards; }
+  .msg .av { flex:0 0 30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .msg .nm { font-weight:700; font-size:12px; display:flex; justify-content:space-between; gap:6px; }
+  .msg .nm i { font-style:normal; font-weight:500; color:#a07ab8; font-size:10px; }
+  @keyframes msgIn { from { transform:translateX(120%) scale(.8); opacity:0; } to { transform:none; opacity:1; } }
+  @keyframes msgOut { to { transform:translateX(120%); opacity:0; } }
+  /* sticker bursts */
+  body.sprinkles .stk { display:block; position:fixed; inset:0; z-index:24; pointer-events:none; overflow:hidden; }
+  .stk span { position:absolute; font-size:54px; animation:pop 1.6s cubic-bezier(.2,1.5,.4,1) forwards; filter:drop-shadow(0 4px 0 rgba(90,20,120,.3)); }
+  @keyframes pop { 0% { transform:translate(-50%,-50%) scale(0) rotate(-30deg); opacity:0; } 20% { transform:translate(-50%,-50%) scale(1.25) rotate(10deg); opacity:1; }
+                   70% { transform:translate(-50%,-90%) scale(1) rotate(-6deg); opacity:1; } 100% { transform:translate(-50%,-160%) scale(.8); opacity:0; } }
+  body.sprinkles .alarm { background:rgba(60,0,20,.95); }
 </style>
 </head>
 <body>
@@ -559,7 +645,7 @@
   <div class="strip" id="strip"></div>
   <div class="peakline"><span class="lbl">Peak</span><span class="seg" id="peakVal"></span><span id="hz"></span></div>
   <div class="summon" id="summon"><div class="wall" id="wallL"></div><div class="sigcard"><div class="cardhd"><span>LINK 07E0 · 07E8</span><span id="cardHz">IDLE</span></div><svg class="sig" viewBox="0 0 100 96">
-    <defs><linearGradient id="goldLeaf" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="90" y2="96"><stop offset="0" stop-color="#fff0c2"/><stop offset=".35" stop-color="#e2b654"/><stop offset=".62" stop-color="#b07a22"/><stop offset="1" stop-color="#f6d580"/></linearGradient></defs>
+    <defs><linearGradient id="candy" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="96"><stop offset="0" stop-color="#ff5fb7"/><stop offset=".33" stop-color="#ffd23f"/><stop offset=".66" stop-color="#7fd8ff"/><stop offset="1" stop-color="#b28dff"/></linearGradient><linearGradient id="goldLeaf" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="90" y2="96"><stop offset="0" stop-color="#fff0c2"/><stop offset=".35" stop-color="#e2b654"/><stop offset=".62" stop-color="#b07a22"/><stop offset="1" stop-color="#f6d580"/></linearGradient></defs>
     <g class="base"><path class="tri" d="M6,8 L94,8 L50,92 Z"/><path class="tri2" d="M13.5,12.2 L86.5,12.2 L50,82.5 Z"/><g class="orn"><circle cx="6" cy="8" r="1.7"/><circle cx="94" cy="8" r="1.7"/><circle cx="50" cy="92" r="1.7"/><circle cx="50" cy="8" r="1"/><circle cx="28" cy="50" r="1"/><circle cx="72" cy="50" r="1"/></g><line class="st" data-i="0" pathLength="1" x1="66" y1="21" x2="50" y2="37"/><line class="st" data-i="1" pathLength="1" x1="50" y1="37" x2="34" y2="21"/><line class="st" data-i="2" pathLength="1" x1="34" y1="21" x2="50" y2="21"/><line class="st" data-i="3" pathLength="1" x1="50" y1="21" x2="50" y2="53"/><line class="st" data-i="4" pathLength="1" x1="50" y1="53" x2="66" y2="21"/><line class="st" data-i="5" pathLength="1" x1="66" y1="21" x2="34" y2="37"/><line class="st" data-i="6" pathLength="1" x1="34" y1="37" x2="34" y2="53"/><circle class="st" cx="66" cy="21" r="3.6"/><line class="st" x1="28" y1="53" x2="40" y2="53"/></g>
     <g class="lit"><path class="tri" pathLength="1" d="M6,8 L94,8 L50,92 Z"/><line class="tr" data-i="0" pathLength="1" x1="66" y1="21" x2="50" y2="37"/><line class="tr" data-i="1" pathLength="1" x1="50" y1="37" x2="34" y2="21"/><line class="tr" data-i="2" pathLength="1" x1="34" y1="21" x2="50" y2="21"/><line class="tr" data-i="3" pathLength="1" x1="50" y1="21" x2="50" y2="53"/><line class="tr" data-i="4" pathLength="1" x1="50" y1="53" x2="66" y2="21"/><line class="tr" data-i="5" pathLength="1" x1="66" y1="21" x2="34" y2="37"/><line class="tr" data-i="6" pathLength="1" x1="34" y1="37" x2="34" y2="53"/><circle class="cap" cx="66" cy="21" r="3.6"/><line class="cap" x1="28" y1="53" x2="40" y2="53"/></g>
   </svg><div class="cardft" id="cardPct">0%</div></div><div class="wall" id="wallR"></div></div>
@@ -605,9 +691,10 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v58 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v59 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
+<div class="chat" id="chat"></div><div class="stk" id="stk"></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
 <div class="toast" id="toast"></div>
 
@@ -749,7 +836,7 @@
   }
   function setSeg(id, text, cells) {
     const cl = document.body.classList;
-    const mode = cl.contains('redshift') || cl.contains('ambient') ? 't' : cl.contains('lapiz') && [...String(text)].every(c => NUM[c] || c === '.' || c === ' ') ? 'n' : 's';
+    const mode = cl.contains('redshift') || cl.contains('ambient') || cl.contains('sprinkles') ? 't' : cl.contains('lapiz') && [...String(text)].every(c => NUM[c] || c === '.' || c === ' ') ? 'n' : 's';
     const key = mode + '|' + text; if (segCache.get(id) === key) return; segCache.set(id, key); segCells.set(id, cells);
     $(id).innerHTML = mode === 't' ? txtSVG(text, cells) : mode === 'n' ? numSVG(text, cells) : segSVG(text, cells);
   }
@@ -1186,8 +1273,8 @@
     const wv = temps.oil != null ? temps.oil : temps.cool, wReady = temps.oil != null ? 180 : 175;
     if (wv != null) {
       const ready = wv >= (warmState === 'ready' ? wReady - 10 : wReady), el = $('lpWarm');   // 10F hysteresis
-      if (ready && warmState === 'cold') { toast('Up to temp' + (temps.oil != null ? ' · oil ' + temps.oil + '°F' : '')); el.textContent = 'Ready'; el.className = 'on ready'; setTimeout(() => { if (warmState === 'ready') el.className = 'on'; }, 2200); }
-      else if (!ready) { el.textContent = 'Cold'; el.className = 'cold'; }
+      if (ready && warmState === 'cold') { candyEvent('ready'); toast('Up to temp' + (temps.oil != null ? ' · oil ' + temps.oil + '°F' : '')); el.textContent = 'Ready'; el.className = 'on ready'; setTimeout(() => { if (warmState === 'ready') el.className = 'on'; }, 2200); }
+      else if (!ready) { if (warmState === null) candyEvent('cold'); el.textContent = 'Cold'; el.className = 'cold'; }
       else if (warmState === null) { el.textContent = 'Ready'; el.className = 'on'; }
       warmState = ready ? 'ready' : 'cold';
     }
@@ -1203,6 +1290,7 @@
       const isRed = rpm >= red; shiftState = isRed ? 2 : rpm >= amber ? 1 : 0;
       if (isRed && !wasRed && now - lastShiftFlash > 3000) {
         if (theme === 'lapiz' && driftOn) { lastShiftFlash = now; lightCue([255,176,40], 2, 70, 60); }   // gold flicker
+        else if (theme === 'sprinkles') { lastShiftFlash = now; candyEvent('shift'); if (cueShift) lightCue([255,60,190], 2, 90, 70); }
         else if (theme === 'ambient' && cueShift) { lastShiftFlash = now; lightCue([200,220,255], 1, 300); }   // soft white pulse
         else if (theme === 'redshift' && cueShift) { lastShiftFlash = now; lightCue([0,210,255], 2, 70, 60); }   // cyan double
         else if (cueShift) { lastShiftFlash = now; lightCue([255,0,0], 1, 250); }
@@ -1232,9 +1320,12 @@
   const LZ_PINK = [255,0,150,0], LZ_GOLD = [255,140,0,0];
   // Redshift ramp: red -> magenta -> cyan at full (the readout color takes over the car)
   const RS_RED = [255,0,28,0], RS_MAG = [255,0,190,0], RS_CYAN = [0,210,255,0];
+  // Sprinkles: cotton candy palette for the starlights (pink, sky blue, lavender, bubblegum)
+  const CC = [[255,40,170,0],[40,150,255,0],[150,60,255,0],[255,90,200,0]];
   // Ambient ramp: dash-strip blue -> cool white (white LED) at full; no red, it's the grown-up one
   const AMB_BLUE = [0,80,255,0], AMB_WHITE = [40,70,160,255];
   function rampColor(base, mix) {
+    if (typeof theme !== 'undefined' && theme === 'sprinkles') { const c = CC[ccIdx % CC.length]; return base.map((v, i) => Math.round(v + (c[i] - v) * Math.min(1, mix * 1.6))); }
     if (typeof theme !== 'undefined' && theme === 'ambient') return base.map((v, i) => Math.round(v + (AMB_WHITE[i] - v) * mix));
     if (typeof theme !== 'undefined' && theme === 'redshift') {
       if (mix <= .5) { const t = mix / .5; return base.map((v, i) => Math.round(v + (RS_MAG[i] - v) * t)); }
@@ -1477,6 +1568,7 @@
     setTimeout(() => { e.className = 'egg'; }, 920);
   }
   function summonEgg() {
+    if (theme === 'sprinkles') { candyBurst(); return; }
     if (eggOn) return; eggOn = true;
     const e = $('egg'), at = (ms, fn) => eggTimers.push(setTimeout(fn, ms));
     e.className = 'egg show'; void e.offsetWidth;
@@ -1499,13 +1591,14 @@
     const wait = (p > 0.85 ? 1000 + Math.random() * 1500 : 6000 + Math.random() * 6000 - p * 3500) * (night ? 1.7 : 1);
     setTimeout(() => {
       if (document.body.classList.contains('lapiz') || document.body.classList.contains('ambient')) return glitchLoop();
+      if (document.body.classList.contains('sprinkles') && Math.random() < .6) return glitchLoop();
       const el = $('summon'); el.classList.remove('glitch'); void el.offsetWidth; el.classList.add('glitch');
       tearWalls(night ? 3 : 6);
       setTimeout(() => el.classList.remove('glitch'), 680); glitchLoop();
     }, wait);
   })();
-  const THEMES = ['outrun', 'lapiz', 'uno', 'redshift', 'ambient'];
-  const THEME_NAME = { outrun:'Outrun', lapiz:'Lapiz', uno:'Uno', redshift:'Redshift', ambient:'Ambient' }, THEME_BG = { ambient:'#050608', outrun:'#06050b', lapiz:'#03040b', uno:'#040202', redshift:'#0a0204' };
+  const THEMES = ['outrun', 'lapiz', 'uno', 'redshift', 'ambient', 'sprinkles'];
+  const THEME_NAME = { outrun:'Outrun', lapiz:'Lapiz', uno:'Uno', redshift:'Redshift', ambient:'Ambient', sprinkles:'Sprinkles' }, THEME_BG = { ambient:'#050608', sprinkles:'#ff7ac8', outrun:'#06050b', lapiz:'#03040b', uno:'#040202', redshift:'#0a0204' };
   let theme = store.get('dd_theme', 'outrun');
   let driftOn = store.get('dd_drift', false);
   function setDrift(v) { driftOn = v; store.set('dd_drift', v); }
@@ -1514,7 +1607,7 @@
   const LAPIZ_RGB2 = [72, 24, 255];      // the indigo end of the drift
   function themeLight() {
     setDrift(theme === 'lapiz');
-    const c = theme === 'lapiz' ? [...LAPIZ_RGB, 0] : theme === 'uno' ? [0, 0, 0, 255] : theme === 'redshift' ? [...RS_RED] : theme === 'ambient' ? [...AMB_BLUE] : null;
+    const c = theme === 'lapiz' ? [...LAPIZ_RGB, 0] : theme === 'uno' ? [0, 0, 0, 255] : theme === 'redshift' ? [...RS_RED] : theme === 'ambient' ? [...AMB_BLUE] : theme === 'sprinkles' ? [...CC[0]] : null;
     if (!c) return;
     L[1] = 0xff; [L[5], L[6], L[7], L[8]] = c; lightSend();
   }
@@ -1633,6 +1726,128 @@
     drawTrace();
   })();
 
+
+  // ================= Sprinkles: candy friends, chat pop-ups, stickers, sprinkles + bubbles, cotton-candy starlights =================
+  let ccIdx = 0;
+  const FRIENDS = [['Gumdrop','🍬','#ff5fb7'],['Turbo Kitty','🐱','#7fd8ff'],['Sprinkle Bot','🤖','#b28dff'],['Captain Waffle','🧇','#ffd23f'],
+    ['Unicorn Mechanic','🦄','#ff8fd0'],['Space Hamster','🐹','#ffb36b'],['Cupcake','🧁','#ff7aa8'],['Dino Dan','🦖','#7ef2c8'],
+    ['Moon Pie','🌙','#c4b5fd'],['Taco Cat','🌮','#fde047'],['Professor Pickle','🥒','#a3e635'],['Robo Llama','🦙','#f0abfc'],
+    ['Bubbles','🫧','#93c5fd'],['Ziggy Zebra','🦓','#e5e7eb'],['Pancake Penguin','🐧','#a5f3fc'],['Lady Lollipop','🍭','#f9a8d4']];
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const EMO = ['🚀','💨','🍭','✨','🌈','🎉','😆','🤩','🦄','💖','⚡','🍬','🧁','🎈','🌟','😎','🥳','🍩','🫧','💫'];
+  const tail = () => { const n = 1 + Math.floor(Math.random() * 3), o = new Set(); while (o.size < n) o.add(pick(EMO)); return ' ' + [...o].join(''); };
+  const OPEN = ['WHOA!','Zoom zoom!','Yeehaw!','Eeek!','Buckle up, buttercup!','Woo-hoo!','Brrrrm!','Weeee!','Hold on to your sprinkles!','Holy guacamole!','Oh my gumdrops!','Yippee!','Hooray!','Ka-ZOOM!'];
+  const LINES = {
+    greet: ['Sprinkles mode is ON!','Who turned on the candy?','Hiii! We are your road trip buddies!','Party in the car! Party in the car!','Let\'s make this drive super sparkly!','Ready, set, SNACKS!'],
+    hello: ['The car is talking to me! Hi car!','Engine is awake! Let\'s goooo!','Ready for an adventure?','Seatbelts on? Snacks ready?','Beep boop! Car connected!','I can hear the engine humming!'],
+    cold: ['Engine is still sleepy, let\'s go gentle!','Brrr! The engine needs a minute to wake up.','Shhh, the engine is still yawning.','Engine is putting on its fuzzy socks.'],
+    ready: ['Engine is all warmed up like hot cocoa!','Toasty and ready to play!','The engine finished its stretches!','Warm and happy, like a cinnamon roll!'],
+    b10: ['A little zoom! {P} psi!','The turbo just woke up!','Turbo says hello at {P} psi!','Tiny zoomies detected!'],
+    b15: ['{P} psi of pure sugar!','We hit {P} psi!','The turbo is giggling at {P} psi!','That\'s {P} psi of zoomies!','My cupcake flew off at {P} psi!'],
+    b20: ['{P} psi?! My donut fell off!','Turbo is doing a happy dance at {P} psi!','{P} psi! I can taste the rainbow!','Hold my lollipop! {P} psi!','The sprinkles are flying! {P} psi!'],
+    b25: ['MAXIMUM GUMDROP! {P} psi!','{P} psi! Is this a rocket ship?!','We are going to the moon! {P} psi!','{P} psi! My ears popped like bubblegum!','SUPER DUPER TURBO! {P} psi!'],
+    peak: ['NEW RECORD! {P} psi!','High score! {P} psi! Put it on the fridge!','That beat the old record! {P} psi!','Gold star! {P} psi is the new best!','Somebody call the record book! {P}!'],
+    again: ['That was fun! Again? 😆','Wheee! Can we do it again?','Best ride ever! (so far)','My hair is all swooshy now!','I need a snack after that one.'],
+    shift: ['Shift! Shift! Shift!','Time for the next gear!','Engine says: bigger gear please!','Ding ding! Shift time!','Gear up, buttercup!'],
+    warm: ['The engine is getting toasty, let\'s chill a bit 🧊','Engine needs a little break, nice and easy!','Ooh, engine is warm, let\'s cruise gently.'],
+    hot: ['Uh oh, the engine is too hot! Time for a break 🧊'],
+    knock: ['Engine hiccup! 🤧','Bless you, engine!','Did the engine just sneeze?','Hic! Excuse me!'],
+    idle: ['Are we there yet?','I spy with my little eye... something sparkly!','What do you call a sheep\'s car? A Lamb-orghini!','What car does a snake drive? An Ana-honda!',
+      'What do you call a sleepy car? A snooze-mobile!','Why did the car go to school? To get a little smarter-car!','Fun fact: turbos can spin over 100,000 times a minute!',
+      'Fun fact: an octopus has three hearts!','Fun fact: a group of flamingos is called a flamboyance!','Fun fact: bananas are berries, but strawberries aren\'t!',
+      'Fun fact: honey never goes bad!','Fun fact: sloths can hold their breath longer than dolphins!','Would you rather drive a cupcake car or a taco truck?',
+      'Let\'s count all the red cars we see!','Who wants to sing a song?','Knock knock! (Who\'s there?) Turbo! (Turbo who?) Turbo-lieve how fast this car is!',
+      'If cars could eat, I think this one would like waffles.','Let\'s play a game: name an animal for every letter!','Remember to drink some water! 💧','You are awesome, just so you know 💖']
+  };
+  let msgLast = 0; const msgQ = [];
+  function candyMsg(text, who) {
+    if (theme !== 'sprinkles') return;
+    const f = who || pick(FRIENDS), el = document.createElement('div'); el.className = 'msg';
+    el.innerHTML = `<div class="av" style="background:${f[2]}">${f[1]}</div><div><div class="nm">${f[0]}<i>now</i></div><div>${text}</div></div>`;
+    const box = $('chat'); box.style.top = Math.round($('summon').getBoundingClientRect().top - 6) + 'px';
+    box.appendChild(el); while (box.children.length > 2) box.firstChild.remove();
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 380); }, 4200);
+  }
+  function sticker(list, n = 3) {
+    if (theme !== 'sprinkles') return;
+    const v = $('boostVal').getBoundingClientRect();
+    for (let i = 0; i < n; i++) setTimeout(() => {
+      const s = document.createElement('span'); s.textContent = pick(list);
+      s.style.left = (v.left + v.width * (.15 + Math.random() * .7)) + 'px'; s.style.top = (v.top + v.height * (.3 + Math.random() * .5)) + 'px';
+      s.style.fontSize = (40 + Math.random() * 28) + 'px'; $('stk').appendChild(s); setTimeout(() => s.remove(), 1700);
+    }, i * 160);
+  }
+  function candyEvent(type, val) {
+    if (theme !== 'sprinkles') return;
+    const now = Date.now(), urgent = type === 'hot' || type === 'peak';
+    if (!urgent && now - msgLast < 3500) { if (/^b\d|shift|again/.test(type) && (!cdPend || type > cdPend.type || cdPend.type === 'shift')) cdPend = { type, val }; return; }
+    msgLast = now; if (cdPend && cdPend.type === type) cdPend = null;
+    let line = pick(LINES[type] || LINES.idle).replace('{P}', val != null ? val.toFixed(1) : '');
+    if (/^b\d/.test(type) && Math.random() < .5) line = pick(OPEN) + ' ' + line;
+    if (!/[\u{1F300}-\u{1FAFF}]$/u.test(line) && type !== 'hot') line += tail();
+    candyMsg(line);
+    if (type === 'peak') { sticker(['🏆','🥇','🎉','🌟','👑'], 4); confetti(90); }
+    else if (type === 'b25') { sticker(['🚀','🌈','🦄','💫','🍭'], 3); confetti(40); }
+    else if (type === 'b20') sticker(['🚀','🍭','✨','😆'], 2);
+    else if (type === 'shift') sticker(['⚡','💥','🏎️'], 1);
+    else if (type === 'greet' || type === 'hello') sticker(['👋','🎈','💖','🍬'], 2);
+  }
+  function candyBurst() { candyMsg(pick(['You found the secret sparkle button!','Tickles! Hee hee!','Boop! 💖','Confetti cannon, FIRE!','That tickles my sprinkles!']), pick(FRIENDS)); sticker(['🎉','🦄','🌈','🍭','💖','✨'], 5); confetti(120); }
+  // event watcher (boost thresholds once per pull, pull end, peak, knock, link, idle chit-chat)
+  let cdPend = null, cdLevel = 0, cdPull = false, cdPk = 0, cdLink = false, cdIdleSince = Date.now(), cdLastIdle = Date.now(), cdKnock = 0, cdWarn = {};
+  setInterval(() => {
+    if (theme !== 'sprinkles') return;
+    const now = Date.now(), psi = rsPsi, link = now - hexLast < 2000;
+    if (cdPend && now - msgLast >= 3500) { const p = cdPend; cdPend = null; candyEvent(p.type, p.val); }
+    if (link && !cdLink) candyEvent('hello'); cdLink = link;
+    const lv = psi >= 25 ? 25 : psi >= 20 ? 20 : psi >= 15 ? 15 : psi >= 10 ? 10 : 0;
+    if (lv > cdLevel) { if (lv >= 15 || cdLevel === 0) candyEvent('b' + lv, psi); cdLevel = lv; }
+    const inPull = !!pull;
+    if (inPull) cdPk = Math.max(cdPk, psi);
+    if (!inPull && cdPull) { if (cdPk >= peak - .05 && cdPk > 8) candyEvent('peak', peak); else setTimeout(() => candyEvent('again'), 1200); cdPk = 0; }
+    if (psi < 3) cdLevel = 0;
+    cdPull = inPull;
+    if (['200A','200B','200C','200D'].some(d => tvT[d] && now - tvT[d] < 1500 && tv[d] < -2) && now - cdKnock > 20000) { cdKnock = now; candyEvent('knock'); }
+    for (const k in st8) { const l = st8[k].level; if (l > (cdWarn[k] || 0)) candyEvent(l === 2 ? 'hot' : 'warm'); cdWarn[k] = l; }
+    if ((liveRpm || 0) > 1200 || psi > 2) cdIdleSince = now;
+    if (now - cdIdleSince > 45000 && now - cdLastIdle > 120000 + Math.random() * 60000) { cdLastIdle = now; candyEvent('idle'); }
+  }, 300);
+  // starlights: cotton candy colors that hop faster the harder you boost (never faster than ~3 changes a second)
+  let ccLast = 0;
+  setInterval(() => {
+    if (theme !== 'sprinkles' || !lightChar || cueBusy || !L[1] || !sentMix || sentMix < .05) return;
+    const gap = 1200 - Math.min(1, sentMix) * 870; if (Date.now() - ccLast < gap) return; ccLast = Date.now();
+    ccIdx++; const f = L.slice(); if (sentBright != null) f[9] = sentBright; if (sentSpeed != null) f[14] = sentSpeed;
+    const rc = rampColor([L[5], L[6], L[7], L[8]], sentMix); for (let i = 0; i < 4; i++) f[5 + i] = rc[i]; liveSend(f);
+  }, 100);
+  // background: sprinkles fall (faster on boost), bubbles rise, confetti bursts
+  const cdots = [], bubs = [], conf = []; let cdT = performance.now();
+  const SPR = ['#ff5fb7','#7fd8ff','#b28dff','#ffd23f','#7ef2c8','#ffffff'];
+  function confetti(n) { if (!bgW) return; for (let i = 0; i < n; i++) conf.push({ x: bgW / 2, y: bgH * .35, vx: (Math.random() - .5) * 420, vy: -150 - Math.random() * 380, a: Math.random() * 6, va: (Math.random() - .5) * 12, c: pick(SPR), life: 2.2 }); }
+  (function candyLoop() {
+    setTimeout(() => requestAnimationFrame(candyLoop), 40);
+    const now = performance.now(), dt = Math.min(.3, (now - cdT) / 1000); cdT = now;
+    if (theme !== 'sprinkles' || curTab !== 'g' || document.hidden) return;
+    bgResize(); if (!bgW || !bgH) return;
+    const b = Math.max(0, Math.min(1, rsPsi / 25));
+    while (cdots.length < 46) cdots.push({ x: Math.random() * bgW, y: Math.random() * bgH, a: Math.random() * 6, va: (Math.random() - .5) * 2, c: pick(SPR), s: .6 + Math.random() * .8 });
+    while (bubs.length < 9) bubs.push({ x: Math.random() * bgW, y: bgH + Math.random() * bgH, r: 6 + Math.random() * 16, w: Math.random() * 6 });
+    bx.setTransform(dpr, 0, 0, dpr, 0, 0); bx.clearRect(0, 0, bgW, bgH);
+    for (const u of bubs) {
+      u.y -= dt * (18 + u.r) * (1 + b); u.w += dt; const x = u.x + Math.sin(u.w) * 6;
+      if (u.y < -u.r) { u.y = bgH + u.r; u.x = Math.random() * bgW; }
+      bx.strokeStyle = 'rgba(255,255,255,.45)'; bx.lineWidth = 1.5; bx.beginPath(); bx.arc(x, u.y, u.r, 0, 7); bx.stroke();
+      bx.fillStyle = 'rgba(255,255,255,.12)'; bx.fill(); bx.fillStyle = 'rgba(255,255,255,.7)'; bx.beginPath(); bx.arc(x - u.r * .35, u.y - u.r * .35, u.r * .18, 0, 7); bx.fill();
+    }
+    for (const d of cdots) {
+      d.y += dt * (14 + b * 160) * d.s; d.a += d.va * dt * (1 + b * 4); if (d.y > bgH + 6) { d.y = -6; d.x = Math.random() * bgW; }
+      bx.save(); bx.translate(d.x, d.y); bx.rotate(d.a); bx.fillStyle = d.c; bx.globalAlpha = .75; bx.beginPath(); bx.roundRect ? bx.roundRect(-4, -1.3, 8, 2.6, 1.3) : bx.rect(-4, -1.3, 8, 2.6); bx.fill(); bx.restore();
+    }
+    for (let i = conf.length - 1; i >= 0; i--) { const c = conf[i]; c.vy += 520 * dt; c.x += c.vx * dt; c.y += c.vy * dt; c.a += c.va * dt; c.life -= dt;
+      if (c.life <= 0 || c.y > bgH + 20) { conf.splice(i, 1); continue; }
+      bx.save(); bx.translate(c.x, c.y); bx.rotate(c.a); bx.globalAlpha = Math.min(1, c.life); bx.fillStyle = c.c; bx.fillRect(-4, -2.5, 8, 5); bx.restore(); }
+  })();
+
   // ----- Redshift: hex columns. The adapter's actual replies scroll by; one byte gets the cursor. No link = blank. -----
   const hexLines = []; let hexLast = 0, hexDirty = true;
   function hexFeed(t) {
@@ -1743,9 +1958,9 @@
     $('themeBtn').textContent = 'Theme: ' + THEME_NAME[theme];
     document.querySelector('meta[name=theme-color]').content = THEME_BG[theme];
     resegAll(); lastPk = -2; illuminate();
-    $('rfL').textContent = theme === 'lapiz' ? 'Pink from' : theme === 'redshift' ? 'Shift from' : theme === 'ambient' ? 'White from' : 'Red from'; $('rtL').textContent = theme === 'lapiz' ? 'Full gold' : theme === 'redshift' ? 'Full cyan' : theme === 'ambient' ? 'Full white' : 'Full red';
+    $('rfL').textContent = theme === 'lapiz' ? 'Pink from' : theme === 'redshift' ? 'Shift from' : theme === 'ambient' ? 'White from' : theme === 'sprinkles' ? 'Candy from' : 'Red from'; $('rtL').textContent = theme === 'lapiz' ? 'Full gold' : theme === 'redshift' ? 'Full cyan' : theme === 'ambient' ? 'Full white' : theme === 'sprinkles' ? 'Full candy' : 'Full red';
   }
-  $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); themeLight(); toast('Theme: ' + THEME_NAME[theme]); };
+  $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); themeLight(); toast('Theme: ' + THEME_NAME[theme]); if (theme === 'sprinkles') setTimeout(() => candyEvent('greet'), 400); };
   applyTheme();
 
   function nightCheck() { const h = new Date().getHours(); document.body.classList.toggle('night', h >= 19 || h < 7); }
