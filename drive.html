@@ -525,7 +525,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v55 · tap peak: reset</span><span><button id="themeBtn">Theme</button><button id="bgBtn"></button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v56 · tap peak: reset</span><span><button id="themeBtn">Theme</button><button id="bgBtn"></button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -1557,7 +1557,7 @@
   function drawHex(dt) {
     const cw = 22, ch = 15;
     if (!hexCells) { hexCells = []; for (let y = 10; y < bgH; y += ch) for (let x = 4; x < bgW; x += cw) hexCells.push({ x, y, t: (Math.random() * 256 | 0).toString(16).toUpperCase().padStart(2, '0'), f: 0 }); }
-    const live = Date.now() - hexLast < 2000, rate = (live ? 30 : 4) * (.4 + Math.max(0, rsPsi) / 18);
+    const live = Date.now() - hexLast < 2000, rate = live ? 30 * (.4 + Math.max(0, rsPsi) / 18) : 0;
     let k = rate * dt; while (k > 0) { if (Math.random() < k) { const c = hexCells[Math.random() * hexCells.length | 0], src = hexLines[hexLines.length - 1 - (Math.random() * 6 | 0)];
       c.t = src ? src.split(' ')[Math.random() * 3 | 0] || c.t : (Math.random() * 256 | 0).toString(16).toUpperCase().padStart(2, '0'); c.f = 1; } k -= 1; }
     bx.font = '500 10px ui-monospace,"DejaVu Sans Mono",monospace'; bx.textBaseline = 'middle';
@@ -1597,7 +1597,7 @@
     if (rsBg === 'sweep') drawSweep(dt);
   })();
 
-  // ----- Redshift: hex columns. The adapter's actual replies scroll by; one byte gets the cursor. Idle = slow synthetic traffic. -----
+  // ----- Redshift: hex columns. The adapter's actual replies scroll by; one byte gets the cursor. No link = blank. -----
   const hexLines = []; let hexLast = 0, hexDirty = true;
   function hexFeed(t) {
     const bytes = t.toUpperCase().replace(/[^0-9A-F]/g, '').match(/../g); if (!bytes) return;
@@ -1607,7 +1607,7 @@
   ['wallL', 'wallR'].forEach(id => { const pre = document.createElement('pre'); pre.className = 'hexcol'; pre.id = id + 'Hex'; $(id).appendChild(pre); });
   setInterval(() => {
     if (theme !== 'redshift' || curTab !== 'g' || document.hidden) return;
-    if (Date.now() - hexLast > 2000) { const b = () => (Math.random() * 256 | 0).toString(16).toUpperCase().padStart(2, '0'); hexLines.push([b(), b(), b()].join(' ')); while (hexLines.length > 40) hexLines.shift(); hexDirty = true; }
+    if (Date.now() - hexLast > 2000 && hexLines.length) { hexLines.length = 0; hexDirty = true; }   // no link: column goes blank
     $('cardHz').textContent = Date.now() - hexLast < 2000 ? 'LIVE' : 'IDLE';
     if (!hexDirty) return; hexDirty = false;
     const rows = 10, L = hexLines.slice(-rows), cur = Math.floor(Math.random() * L.length);
