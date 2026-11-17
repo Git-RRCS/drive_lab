@@ -166,11 +166,11 @@
   .summon.full .sig { animation:summon 1.2s ease-in-out infinite; }
   @keyframes summon { 50% { filter:brightness(1.35); } }
   /* Uno: big sigil (never smaller than v22), bars never collapse, digits sized to fit */
-  body.uno #tabGauges .hero { justify-content:space-between; }
-  body.uno .val { margin:clamp(4px,1vh,18px) auto 4px; width:min(96%, 560px, 34vh); }
-  body.uno .tach { height:clamp(36px, 6vh, 64px); }
-  body.uno .summon { flex:1 1 0; min-height:150px; margin-top:clamp(4px,1vh,12px); }
-  body.uno .summon .sig { max-height:230px; max-width:62%; }
+  body.uno #tabGauges .hero, body.lapiz #tabGauges .hero { justify-content:space-between; }
+  body.uno .val, body.lapiz .val { margin:clamp(4px,1vh,18px) auto 4px; width:min(96%, 560px, 34vh); }
+  body.uno .tach, body.lapiz .tach { height:clamp(36px, 6vh, 64px); }
+  body.uno .summon, body.lapiz .summon { flex:1 1 0; min-height:150px; margin-top:clamp(4px,1vh,12px); }
+  body.uno .summon .sig, body.lapiz .summon .sig { max-height:230px; max-width:62%; }
   /* ===== easter egg: full summoning ===== */
   .egg { position:fixed; inset:0; z-index:60; background:rgba(4,2,3,.0); display:none; overflow:hidden; cursor:pointer; transition:background .35s; }
   .egg.p1 { background:rgba(4,2,3,.55); }
@@ -198,7 +198,7 @@
   @keyframes egglitchpage { 0% { transform:translate(-4px,1px) skewX(-3deg); filter:drop-shadow(3px 0 0 rgba(255,0,90,.6)); } 20% { transform:translate(3px,0); filter:none; } 40% { transform:translate(-2px,-1px) skewX(2deg); filter:drop-shadow(-3px 0 0 rgba(0,240,255,.5)); } 60% { transform:none; } 80% { transform:translate(1px,0); } 100% { transform:none; filter:none; } }
   .egg.out { animation:eggout .9s ease-out forwards; }
   @keyframes eggout { 0% { opacity:1; } 100% { opacity:0; } }
-  @media (max-height:815px) { body.uno .summon { min-height:124px; } }
+  @media (max-height:815px) { body.uno .summon, body.lapiz .summon { min-height:124px; } }
   @media (max-height:790px) { .summon { min-height:44px; } .peakline { margin-top:4px; } .tach { height:40px; } .lamps { margin-top:6px; } }
   /* idle breathing so it reads as alive, not decoration */
   .summon .base { animation:breathe 6s ease-in-out infinite; }
@@ -351,7 +351,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v41 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v42 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -394,7 +394,7 @@
     { name:'Off',   off:true },
   ];
   const COLORS = [[255,0,0,0,'#ff2a2a'],[255,90,0,0,'#ff6a00'],[140,6,18,0,'#8c0612'],[0,255,60,0,'#16e05a'],
-                  [0,220,255,0,'#00d7ff'],[0,60,255,0,'#2c5bff'],[160,0,255,0,'#a32bff'],[0,0,0,255,'#ffffff']];
+                  [0,220,255,0,'#00d7ff'],[20,70,255,0,'#1f4cc4'],[160,0,255,0,'#a32bff'],[0,0,0,255,'#ffffff']];
 
   for (const p of PRESETS) {
     const b = document.createElement('button'); b.textContent = p.name;
@@ -1148,12 +1148,18 @@
   const THEMES = ['outrun', 'lapiz', 'uno'];
   const THEME_NAME = { outrun:'Outrun', lapiz:'Lapiz', uno:'Uno' }, THEME_BG = { outrun:'#06050b', lapiz:'#03040b', uno:'#040202' };
   let theme = store.get('dd_theme', 'outrun');
+  // Lapiz Blue on the fiber light (scaled up for LEDs, which render dark blues dimly)
+  const LAPIZ_RGB = [20, 70, 255];
+  function themeLight() {
+    if (theme !== 'lapiz') return;
+    L[1] = 0xff; [L[5], L[6], L[7], L[8]] = [...LAPIZ_RGB, 0]; lightSend();
+  }
   function applyTheme() {
     THEMES.forEach(t => document.body.classList.toggle(t, t === theme));
     $('themeBtn').textContent = 'Theme: ' + THEME_NAME[theme];
     document.querySelector('meta[name=theme-color]').content = THEME_BG[theme];
   }
-  $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); toast('Theme: ' + THEME_NAME[theme]); };
+  $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); themeLight(); toast('Theme: ' + THEME_NAME[theme]); };
   applyTheme();
 
   function nightCheck() { const h = new Date().getHours(); document.body.classList.toggle('night', h >= 19 || h < 7); }
