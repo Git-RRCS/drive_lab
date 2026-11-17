@@ -358,7 +358,7 @@
   body.lapiz #btnConnect { border-color:rgb(110,195,255); box-shadow:0 0 10px rgba(70,165,255,.4); }
 
   /* ===== Redshift: a red city grid at night. Red = structure, cyan = live readouts, yellow = labels that matter, bright blinking red = alarm only ===== */
-  .sigcard { display:contents; } .cardhd, .cardft, .cmap, .hexcol { display:none; }
+  .sigcard { display:contents; } .cardhd, .cardft, .hexcol { display:none; }
   body.redshift { --bg:#0a0204; --card:rgba(46,8,13,.62); --line:#5c1a22; --text:#f3e4e4; --dim:#c4525c;
                   --ro:96,238,238; --ac:255,86,86; --yel:240,208,74; --warn:#f0d04a; --bad:#ff2424;
                   --serif:'Rajdhani','DejaVu Sans Condensed',system-ui,sans-serif;
@@ -381,19 +381,13 @@
   /* hero: map panel with cut corners */
   body.redshift .hero { isolation:isolate; border-radius:0; clip-path:var(--clip); border:1px solid rgba(var(--ac),.55);
                         background:#070103; box-shadow:inset 0 0 0 1px rgba(var(--ac),.12), inset 0 0 70px rgba(0,0,0,.75); }
-  body.redshift:not(.rsmap) .hero::before { background:radial-gradient(60% 22% at 50% 28%, rgba(7,1,3,.55) 0%, transparent 100%) !important; }
+  body.redshift .hero::before { background:radial-gradient(60% 22% at 50% 28%, rgba(7,1,3,.55) 0%, transparent 100%) !important; }
   body.redshift .hero::before { z-index:-1; height:100%;
         background:radial-gradient(70% 34% at 50% 30%, rgba(7,1,3,.88) 0%, rgba(7,1,3,.55) 60%, transparent 100%),
                    radial-gradient(60% 22% at 50% 58%, rgba(7,1,3,.7) 0%, transparent 100%),
                    linear-gradient(180deg, rgba(7,1,3,.35), rgba(7,1,3,.1) 50%, rgba(7,1,3,.5)); }
   .rsbg { display:none; position:absolute; inset:0; width:100%; height:100%; z-index:-2; pointer-events:none; opacity:.85; }
-  body.redshift .rsbg { display:block; } body.redshift.rsmap .rsbg { display:none; } body.night.redshift .rsbg { opacity:.65; }
-  #bgBtn { display:none; background:none; border:none; padding:0 0 0 8px; font:inherit; text-decoration:underline; }
-  body.redshift #bgBtn { display:inline; clip-path:none; font:600 11px var(--serif); letter-spacing:.08em; color:rgb(var(--yel)); }
-  body.redshift.rsmap .cmap { display:block; position:absolute; inset:0; z-index:-2; overflow:hidden; pointer-events:none; opacity:.62; }
-  body.redshift .cmapin { position:absolute; left:-60%; top:-40%; width:220%; height:180%; background-repeat:repeat;
-        transform:perspective(700px) rotateX(38deg) rotateZ(-32deg); transform-origin:50% 55%; }
-  body.night.redshift .cmap { opacity:.45; }
+  body.redshift .rsbg { display:block; } body.night.redshift .rsbg { opacity:.65; }
   body.redshift .lbl { font:600 13px var(--serif); letter-spacing:.2em; color:rgb(var(--ac)); }
   body.redshift .lbl b { color:rgb(var(--yel)); font-weight:700; }
   body.redshift .tachscale, body.redshift .scale { font:600 11px var(--serif); color:rgba(var(--ac),.75); }
@@ -469,7 +463,7 @@
 </div>
 
 <section class="tab" id="tabGauges">
-<div class="hero" id="hero"><svg class="topo" id="topo"><path id="topoA"/><path id="topoB"/><path id="topoC"/><g id="rip"></g></svg><div class="cmap"><div class="cmapin" id="cmap"></div></div><canvas class="rsbg" id="rsbg"></canvas>
+<div class="hero" id="hero"><svg class="topo" id="topo"><path id="topoA"/><path id="topoB"/><path id="topoC"/><g id="rip"></g></svg><canvas class="rsbg" id="rsbg"></canvas>
   <div class="lbl" style="display:flex;justify-content:space-between"><span>RPM <b>×1000</b></span><span id="rpmLimitLbl"></span></div>
   <div class="tach" id="tach"></div>
   <div class="tachscale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span></div>
@@ -525,7 +519,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v56 · tap peak: reset</span><span><button id="themeBtn">Theme</button><button id="bgBtn"></button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v57 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -1410,191 +1404,106 @@
     liveSend(f);
   }, 700);
 
-  // ----- Redshift: a tileable night-city grid (red blocks, cyan streets, one diagonal avenue), panned like you're driving it -----
-  let cityBuilt = false;
-  function buildCityMap() {
-    if (cityBuilt) return; cityBuilt = true;
-    const T = 512, cv = document.createElement('canvas'); cv.width = cv.height = T; const g = cv.getContext('2d');
-    let seed = 1871; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-    g.fillStyle = '#080103'; g.fillRect(0, 0, T, T);
-    const cuts = n => { const a = [0]; while (a[a.length - 1] < T - 70) a.push(a[a.length - 1] + 46 + Math.floor(rnd() * 40)); return a; };
-    const xs = cuts(), ys = cuts(), major = new Set([0]);
-    // blocks of buildings, with a fake extruded side
-    for (let i = 0; i < xs.length; i++) for (let j = 0; j < ys.length; j++) {
-      const x0 = xs[i] + 7, x1 = (xs[i + 1] ?? T) - 7, y0 = ys[j] + 7, y1 = (ys[j + 1] ?? T) - 7;
-      if (rnd() < .07) continue;                                  // empty lot / park
-      for (let y = y0; y < y1 - 4;) {
-        const h = Math.min(y1 - y, 7 + Math.floor(rnd() * 12));
-        for (let x = x0; x < x1 - 4;) {
-          const w = Math.min(x1 - x, 6 + Math.floor(rnd() * 14));
-          if (rnd() > .1) {
-            const r = 150 + Math.floor(rnd() * 70);
-            g.fillStyle = `rgb(${r * .45 | 0},4,${r * .1 | 0})`; g.fillRect(x + 2, y + 2, w - 3, h - 3);
-            g.fillStyle = `rgb(${r},${8 + rnd() * 10 | 0},${36 + rnd() * 30 | 0})`; g.fillRect(x, y, w - 3, h - 3);
-          }
-          x += w;
-        }
-        y += h;
-      }
-    }
-    const road = (x0, y0, x1, y1, w) => {
-      for (const [dx, dy] of [[0,0],[T,0],[-T,0],[0,T],[0,-T],[T,T],[-T,-T]]) {
-        g.lineWidth = w; g.strokeStyle = 'rgba(70,215,215,.92)'; g.beginPath(); g.moveTo(x0 + dx, y0 + dy); g.lineTo(x1 + dx, y1 + dy); g.stroke();
-        if (w > 5) { g.lineWidth = 1; g.strokeStyle = 'rgba(8,40,44,.9)'; g.setLineDash([6, 6]); g.beginPath(); g.moveTo(x0 + dx, y0 + dy); g.lineTo(x1 + dx, y1 + dy); g.stroke(); g.setLineDash([]); }
-      }
-    };
-    xs.forEach((x, i) => road(x, 0, x, T, i === 0 || rnd() < .25 ? 9 : 4.5));
-    ys.forEach((y, i) => road(0, y, T, y, i === 0 || rnd() < .25 ? 9 : 4.5));
-    road(0, 0, T, T, 11);                                          // the diagonal avenue wraps cleanly at 45°
-    $('cmap').style.backgroundImage = `url(${cv.toDataURL()})`;
-    $('cmap').style.backgroundSize = T + 'px ' + T + 'px';
-  }
-  let mapY = 0, mapT = performance.now();
-  (function mapLoop() {
-    setTimeout(() => requestAnimationFrame(mapLoop), 50);
-    const now = performance.now(), dt = Math.min(.3, (now - mapT) / 1000); mapT = now;
-    if (theme !== 'redshift' || curTab !== 'g' || document.hidden) return;
-    mapY = (mapY + dt * (5 + Math.min(1, (liveRpm || 0) / 7000) * 70)) % 512;
-    $('cmap').style.backgroundPosition = `0px ${mapY.toFixed(1)}px`;
-  })();
-
-  // ----- Redshift backgrounds (trial): the real map sits beside the phone, so the panel shows something the head unit can't -----
-  const RS_BG = ['combo', 'skyline', 'streets', 'trace', 'hex', 'sweep', 'map'];
-  const RS_BG_NAME = { combo:'Streets + Skyline', skyline:'Skyline', streets:'Streets', trace:'Trace', hex:'Hex field', sweep:'Sweep', map:'Map' };
-  let rsBg = store.get('dd_rsBg', 'combo'); if (!RS_BG.includes(rsBg)) rsBg = 'combo';
-  function applyRsBg() { document.body.classList.toggle('rsmap', rsBg === 'map'); $('bgBtn').textContent = 'BG: ' + RS_BG_NAME[rsBg]; }
-  $('bgBtn').onclick = () => { rsBg = RS_BG[(RS_BG.indexOf(rsBg) + 1) % RS_BG.length]; store.set('dd_rsBg', rsBg); applyRsBg(); bgReset(); toast('Background: ' + RS_BG_NAME[rsBg]); };
+  // ----- Redshift background: a faint scope trace in the space below Peak. Last 30 s of boost (cyan) and RPM (yellow),
+  //   with events marked on it: pulls shaded, knock as pink ticks, the session peak as a yellow marker that pings when set,
+  //   warnings as a pink flash. The line brightens at full summon. -----
   const bgc = $('rsbg'), bx = bgc.getContext('2d');
-  const CY = '96,238,238', RD = '255,86,86', YL = '240,208,74';
-  let bgW = 0, bgH = 0, dpr = 1, bgT = performance.now(), sky = [], skyX = 0, skyEnd = 0, trace = [], traceAcc = 0, hexCells = null, sweepA = 0, blips = [], streets = null;
-  function bgReset() { sky = []; skyX = 0; skyEnd = 0; hexCells = null; streets = null; blips = []; }
+  const CY = '96,238,238', RD = '255,86,86', YL = '240,208,74', PK = '255,90,160';
+  const TN = 300;                        // samples kept (10 Hz x 30 s)
+  let bgW = 0, bgH = 0, dpr = 1, bgT = performance.now(), traceAcc = 0, traceN = 0;
+  const trace = [], tev = [];            // trace: {id, p, r}; tev: {id, type, t0, v}
+  let tPull = false, tPullPk = 0, tPeak = null, pkId = null, pkV = 0, lastKnockId = -99, tWarn = {};
   function bgResize() {
     const r = bgc.getBoundingClientRect(), w = Math.round(r.width), h = Math.round(r.height);
     dpr = Math.min(2, window.devicePixelRatio || 1);
-    if (w !== bgW || h !== bgH) { bgW = w; bgH = h; bgc.width = w * dpr; bgc.height = h * dpr; bgReset(); }
+    if (w !== bgW || h !== bgH) { bgW = w; bgH = h; bgc.width = w * dpr; bgc.height = h * dpr; }
   }
-  function sigCenter() {
-    const sr = document.querySelector('#summon .sig').getBoundingClientRect(), hr = $('hero').getBoundingClientRect();
-    return [sr.left - hr.left + sr.width / 2, sr.top - hr.top + sr.height * .45];
-  }
-  const rpmF = () => Math.min(1, (liveRpm || 0) / 7000);
-  // 1. skyline: each new building's height is your boost right now; windows light with RPM; your peak gets a beacon
-  function drawSky(dt, combo) {
-    skyX += dt * (14 + rpmF() * 46);
-    while (skyEnd < skyX + bgW + 40) {
-      const w = 9 + Math.floor(Math.random() * 14), psi = Math.max(0, rsPsi);
-      const h = Math.max(10, 12 + psi / 30 * bgH * (combo ? .36 : .46) + Math.random() * 7), p = .05 + rpmF() * .55;
-      const cols = Math.max(1, Math.floor((w - 4) / 4)), rows = Math.max(1, Math.floor((h - 6) / 5)), win = [];
-      for (let i = 0; i < cols * rows; i++) win.push(Math.random() < p);
-      sky.push({ x: skyEnd, w, h, cols, rows, win, pk: psi > 8 && psi >= peak - .05 });
-      skyEnd += w + (Math.random() < .2 ? 3 : 1);
+  function traceSample() {
+    const id = traceN++, now = performance.now(), p = rsPsi;
+    trace.push({ id, p, r: liveRpm || 0 }); if (trace.length > TN) trace.shift();
+    while (tev.length && tev[0].id < id - TN && tev[0].type !== 'pk') tev.shift();
+    const inPull = !!pull;
+    if (inPull && !tPull) { tev.push({ id, type:'ps', t0:now }); tPullPk = 0; }
+    if (inPull) tPullPk = Math.max(tPullPk, p);
+    if (!inPull && tPull) {
+      tev.push({ id, type:'pe', t0:now });
+      if (pkId != null && tPullPk >= peak - .05 && tPullPk > 8) tev.push({ id:pkId, type:'peak', t0:now, v:peak });   // new session peak: ping it
     }
-    while (sky.length && sky[0].x + sky[0].w < skyX) sky.shift();
-    const base = bgH, g = bx.createLinearGradient(0, base - 60, 0, base);
-    g.addColorStop(0, `rgba(${RD},0)`); g.addColorStop(1, `rgba(${RD},.16)`); bx.fillStyle = g; bx.fillRect(0, base - 60, bgW, 60);
-    const blink = Math.floor(performance.now() / 500) % 2;
-    for (const b of sky) {
-      const x = b.x - skyX, y = base - b.h;
-      bx.fillStyle = 'rgba(92,8,22,.92)'; bx.fillRect(x, y, b.w, b.h);
-      bx.fillStyle = `rgba(${RD},.55)`; bx.fillRect(x, y, b.w, 1);
-      bx.fillStyle = `rgba(${CY},.8)`;
-      for (let r = 0; r < b.rows; r++) for (let c = 0; c < b.cols; c++) if (b.win[r * b.cols + c]) bx.fillRect(x + 2 + c * 4, y + 4 + r * 5, 2, 2);
-      if (b.pk && blink) { bx.save(); bx.shadowColor = `rgb(${YL})`; bx.shadowBlur = 8; bx.fillStyle = `rgb(${YL})`; bx.fillRect(x + b.w / 2 - 1.5, y - 5, 3, 3); bx.restore(); }
-    }
+    tPull = inPull;
+    if (tPeak === null) tPeak = peak;
+    if (peak > tPeak + .04) { tPeak = peak; pkId = id; pkV = peak; }          // marker follows the max sample
+    else if (peak < tPeak - .5) { tPeak = peak; pkId = null; }               // peak was reset
+    const nowMs = Date.now();
+    const knock = ['200A','200B','200C','200D'].some(d => tvT[d] && nowMs - tvT[d] < 1500 && tv[d] < -1.5);
+    if (knock && id - lastKnockId > 4) { tev.push({ id, type:'k', t0:now }); lastKnockId = id; }
+    for (const k in st8) { const lv = st8[k].level; if (lv > (tWarn[k] || 0)) tev.push({ id, type:'w', t0:now }); tWarn[k] = lv; }
   }
-  // 2. streets: wireframe roads enter from the left edge as if continuing off the head unit; traffic pulses move with RPM
-  function drawStreets(dt, combo) {
-    if (!streets) {
-      streets = []; let seed = 1871; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-      const n = combo ? 6 : 9, ymax = combo ? .5 : .95;
-      for (let k = 0; k < n; k++) {
-        let x = -10, y = bgH * (.04 + (ymax - .04) * (k + rnd() * .6) / n), a = (k % 2 ? -.52 : .18) + (rnd() - .5) * .2;
-        const pts = [[x, y]], lens = [0];
-        while (x < bgW * .85 && pts.length < 40) {
-          if (rnd() < .22) a += (rnd() < .5 ? -1 : 1) * (Math.PI / 2 - .15) * (rnd() < .5 ? 1 : .35);
-          a = Math.max(-1.25, Math.min(1.25, a));
-          const L = 28 + rnd() * 46; x += Math.cos(a) * L; y += Math.sin(a) * L;
-          if (y < 0 || y > bgH * (combo ? .62 : 1)) { a = -a; y = Math.max(2, Math.min(bgH * (combo ? .62 : 1) - 2, y)); }
-          pts.push([x, y]); lens.push(lens[lens.length - 1] + L);
-        }
-        streets.push({ pts, lens, w: k % 3 === 0 ? 3 : 1.4, pulses: [] });
+  function drawTrace() {
+    const pl = document.querySelector('.peakline').getBoundingClientRect(), lp = $('lamps').getBoundingClientRect(), hr = $('hero').getBoundingClientRect();
+    const top = pl.bottom - hr.top + 8, bot = lp.top - hr.top - 6, H = bot - top; if (H < 40) return;
+    const now = performance.now(), dx = bgW / (TN - 1), X = id => bgW - (traceN - 1 - id) * dx;
+    const Y = p => bot - Math.max(0, Math.min(30, p)) / 30 * H, YR = r => bot - Math.min(1, r / 7000) * H;
+    bx.save(); bx.beginPath(); bx.rect(0, top - 2, bgW, H + 4); bx.clip();
+    // grid
+    bx.lineWidth = 1;
+    for (let q = 10; q <= 30; q += 10) { const y = Y(q); bx.strokeStyle = `rgba(${RD},.08)`; bx.beginPath(); bx.moveTo(0, y); bx.lineTo(bgW, y); bx.stroke(); }
+    bx.strokeStyle = `rgba(${RD},.14)`; bx.beginPath(); bx.moveTo(0, bot); bx.lineTo(bgW, bot); bx.stroke();
+    for (let id = traceN - (traceN % 50); id > traceN - TN; id -= 50) { const x = X(id); bx.strokeStyle = `rgba(${RD},.06)`; bx.beginPath(); bx.moveTo(x, top); bx.lineTo(x, bot); bx.stroke(); }
+    // pull spans
+    let open = null;
+    for (const e of tev) {
+      if (e.type === 'ps') open = e.id;
+      if (e.type === 'pe' && open != null) { const x0 = X(open), x1 = X(e.id); bx.fillStyle = `rgba(${CY},.045)`; bx.fillRect(x0, top, x1 - x0, H); open = null; }
+    }
+    if (open != null) { const x0 = X(open); bx.fillStyle = `rgba(${CY},.06)`; bx.fillRect(x0, top, bgW - x0, H); }
+    if (trace.length > 1) {
+      // rpm
+      bx.beginPath(); trace.forEach((t, i) => i ? bx.lineTo(X(t.id), YR(t.r)) : bx.moveTo(X(t.id), YR(t.r)));
+      bx.strokeStyle = `rgba(${YL},.22)`; bx.lineWidth = 1; bx.stroke();
+      // boost: faint by default, surges briefly when a peak pings, brighter at full summon
+      const surge = tev.reduce((m, e) => e.type === 'peak' ? Math.max(m, 1 - (now - e.t0) / 900) : m, 0);
+      const a = Math.min(.95, .42 + (sumFull ? .2 : 0) + Math.max(0, surge) * .5);
+      bx.beginPath(); trace.forEach((t, i) => i ? bx.lineTo(X(t.id), Y(t.p)) : bx.moveTo(X(t.id), Y(t.p)));
+      bx.shadowColor = `rgb(${CY})`; bx.shadowBlur = 4 + Math.max(0, surge) * 10; bx.strokeStyle = `rgba(${CY},${a.toFixed(2)})`; bx.lineWidth = 1.5 + (sumFull ? .6 : 0); bx.stroke();
+      bx.shadowBlur = 0; bx.lineTo(X(trace[trace.length - 1].id), bot); bx.lineTo(X(trace[0].id), bot); bx.closePath(); bx.fillStyle = `rgba(${CY},.04)`; bx.fill();
+    }
+    const pAt = id => { const t = trace[id - trace[0]?.id]; return t ? t.p : null; };
+    for (const e of tev) {
+      const age = (now - e.t0) / 1000, x = X(e.id);
+      if (e.type === 'k') {                                   // knock: pink tick + dot, ring on arrival
+        bx.fillStyle = `rgba(${PK},.75)`; bx.fillRect(x - 1, bot - 9, 2, 9);
+        const p = pAt(e.id); if (p != null) { bx.beginPath(); bx.arc(x, Y(p), 2.2, 0, 7); bx.fill(); }
+        if (age < .9 && p != null) { bx.strokeStyle = `rgba(${PK},${(.8 * (1 - age / .9)).toFixed(2)})`; bx.lineWidth = 1.5; bx.beginPath(); bx.arc(x, Y(p), 3 + age * 22, 0, 7); bx.stroke(); }
+      }
+      if (e.type === 'w' && age < 1.6) {                      // warning: pink band flash
+        bx.fillStyle = `rgba(${PK},${(.22 * (1 - age / 1.6)).toFixed(3)})`; bx.fillRect(0, top, bgW, H);
+      }
+      if (e.type === 'peak' && age < 1.4) {                   // new peak: expanding rings + level line sweep
+        const y = Y(e.v), f = 1 - age / 1.4;
+        bx.strokeStyle = `rgba(${YL},${(.9 * f).toFixed(2)})`; bx.lineWidth = 1.5;
+        for (const k of [0, .25]) { const r = 4 + Math.max(0, age - k) * 46; if (age > k) { bx.beginPath(); bx.arc(x, y, r, 0, 7); bx.stroke(); } }
+        bx.strokeStyle = `rgba(${YL},${(.35 * f).toFixed(2)})`; bx.setLineDash([4, 4]); bx.beginPath(); bx.moveTo(0, y); bx.lineTo(bgW, y); bx.stroke(); bx.setLineDash([]);
       }
     }
-    const fade = bx.createLinearGradient(0, 0, bgW * .8, 0);
-    fade.addColorStop(0, `rgba(${CY},.85)`); fade.addColorStop(.5, `rgba(${CY},.35)`); fade.addColorStop(1, `rgba(${CY},0)`);
-    bx.strokeStyle = fade; bx.lineCap = 'round'; bx.lineJoin = 'round';
-    for (const st of streets) { bx.lineWidth = st.w; bx.beginPath(); st.pts.forEach(([x, y], i) => i ? bx.lineTo(x, y) : bx.moveTo(x, y)); bx.stroke(); }
-    const sp = 40 + rpmF() * 220, total = st => st.lens[st.lens.length - 1];
-    bx.save(); bx.shadowColor = `rgb(${CY})`; bx.shadowBlur = 6;
-    for (const st of streets) {
-      if (Math.random() < dt * (.35 + rpmF() * 2.2)) st.pulses.push(0);
-      st.pulses = st.pulses.map(d => d + sp * dt).filter(d => d < total(st));
-      for (const d of st.pulses) {
-        let i = 1; while (i < st.lens.length - 1 && st.lens[i] < d) i++;
-        const [x0, y0] = st.pts[i - 1], [x1, y1] = st.pts[i], t = (d - st.lens[i - 1]) / (st.lens[i] - st.lens[i - 1] || 1);
-        const x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t, al = Math.max(0, 1 - x / (bgW * .8));
-        bx.fillStyle = `rgba(220,255,255,${al.toFixed(2)})`; bx.beginPath(); bx.arc(x, y, st.w > 2 ? 2.2 : 1.6, 0, 7); bx.fill();
-      }
+    // standing peak marker
+    if (pkId != null && pkId > traceN - TN) {
+      const x = X(pkId), y = Y(pkV);
+      bx.fillStyle = `rgb(${YL})`; bx.shadowColor = `rgb(${YL})`; bx.shadowBlur = 6;
+      bx.beginPath(); bx.moveTo(x, y - 4); bx.lineTo(x + 4, y); bx.lineTo(x, y + 4); bx.lineTo(x - 4, y); bx.closePath(); bx.fill(); bx.shadowBlur = 0;
+      bx.font = '600 10px Rajdhani,"DejaVu Sans Condensed",sans-serif'; bx.textBaseline = 'bottom';
+      bx.fillStyle = `rgba(${YL},.8)`; bx.textAlign = x > bgW - 40 ? 'right' : 'left'; bx.fillText('PK ' + pkV.toFixed(1), x + (x > bgW - 40 ? -6 : 6), y - 3); bx.textAlign = 'left';
     }
     bx.restore();
-  }
-  // 3. trace: the last 30 s of boost (cyan) and RPM (yellow), scope-style
-  function drawTrace() {
-    const top = bgH * .1, bot = bgH * .94, H = bot - top, n = 300, dx = bgW / (n - 1);
-    bx.lineWidth = 1;
-    for (let p = 0; p <= 30; p += 5) { const y = bot - p / 30 * H; bx.strokeStyle = `rgba(${RD},${p % 10 ? .12 : .24})`; bx.beginPath(); bx.moveTo(0, y); bx.lineTo(bgW, y); bx.stroke(); }
-    const off = (trace.length % 50) * dx;
-    for (let x = bgW - off; x > 0; x -= 50 * dx) { bx.strokeStyle = `rgba(${RD},.08)`; bx.beginPath(); bx.moveTo(x, top); bx.lineTo(x, bot); bx.stroke(); }
-    if (trace.length < 2) return;
-    const X = i => bgW - (trace.length - 1 - i) * dx;
-    bx.beginPath(); trace.forEach(([, r], i) => { const y = bot - Math.min(1, r / 7000) * H; i ? bx.lineTo(X(i), y) : bx.moveTo(X(i), y); });
-    bx.strokeStyle = `rgba(${YL},.5)`; bx.lineWidth = 1.2; bx.stroke();
-    bx.beginPath(); trace.forEach(([p], i) => { const y = bot - Math.max(0, Math.min(30, p)) / 30 * H; i ? bx.lineTo(X(i), y) : bx.moveTo(X(i), y); });
-    bx.save(); bx.shadowColor = `rgb(${CY})`; bx.shadowBlur = 8; bx.strokeStyle = `rgba(${CY},.85)`; bx.lineWidth = 2; bx.stroke(); bx.restore();
-    bx.lineTo(bgW, bot); bx.lineTo(X(0), bot); bx.closePath(); bx.fillStyle = `rgba(${CY},.07)`; bx.fill();
-  }
-  // 4. hex field: the whole panel is a dim byte grid; bytes flash cyan as the adapter answers, busier on boost
-  function drawHex(dt) {
-    const cw = 22, ch = 15;
-    if (!hexCells) { hexCells = []; for (let y = 10; y < bgH; y += ch) for (let x = 4; x < bgW; x += cw) hexCells.push({ x, y, t: (Math.random() * 256 | 0).toString(16).toUpperCase().padStart(2, '0'), f: 0 }); }
-    const live = Date.now() - hexLast < 2000, rate = live ? 30 * (.4 + Math.max(0, rsPsi) / 18) : 0;
-    let k = rate * dt; while (k > 0) { if (Math.random() < k) { const c = hexCells[Math.random() * hexCells.length | 0], src = hexLines[hexLines.length - 1 - (Math.random() * 6 | 0)];
-      c.t = src ? src.split(' ')[Math.random() * 3 | 0] || c.t : (Math.random() * 256 | 0).toString(16).toUpperCase().padStart(2, '0'); c.f = 1; } k -= 1; }
-    bx.font = '500 10px ui-monospace,"DejaVu Sans Mono",monospace'; bx.textBaseline = 'middle';
-    for (const c of hexCells) {
-      if (c.f > .02) { bx.fillStyle = `rgba(${CY},${(c.f * .9).toFixed(2)})`; c.f -= dt * 1.4; } else { c.f = 0; bx.fillStyle = `rgba(${RD},.22)`; }
-      bx.fillText(c.t, c.x, c.y);
-    }
-  }
-  // 5. sweep: slow radar from the sigil, faster with RPM; blips are atmosphere for now (Valentine One later)
-  function drawSweep(dt) {
-    const [cx, cy] = sigCenter(), R = Math.hypot(Math.max(cx, bgW - cx), Math.max(cy, bgH - cy));
-    bx.lineWidth = 1;
-    for (let r = 50; r < R; r += 50) { bx.strokeStyle = `rgba(${RD},.24)`; bx.beginPath(); bx.arc(cx, cy, r, 0, 7); bx.stroke(); }
-    bx.strokeStyle = `rgba(${RD},.1)`; bx.beginPath(); bx.moveTo(0, cy); bx.lineTo(bgW, cy); bx.moveTo(cx, 0); bx.lineTo(cx, bgH); bx.stroke();
-    const prev = sweepA; sweepA = (sweepA + dt * (1.1 + rpmF() * 2.4)) % (Math.PI * 2);
-    for (let k = 0; k < 28; k++) {
-      const a1 = sweepA - k * .035, a0 = a1 - .036;
-      bx.fillStyle = `rgba(${CY},${(.3 * (1 - k / 28)).toFixed(3)})`; bx.beginPath(); bx.moveTo(cx, cy); bx.arc(cx, cy, R, a0, a1); bx.closePath(); bx.fill();
-    }
-    bx.strokeStyle = `rgba(${CY},.7)`; bx.lineWidth = 1.5; bx.beginPath(); bx.moveTo(cx, cy); bx.lineTo(cx + Math.cos(sweepA) * R, cy + Math.sin(sweepA) * R); bx.stroke();
-    if (Math.random() < dt * (.6 + Math.max(0, rsPsi) / 15)) { const r = 40 + Math.random() * (R * .7); blips.push({ x: cx + Math.cos(sweepA) * r, y: cy + Math.sin(sweepA) * r, f: 1 }); }
-    blips = blips.filter(b => (b.f -= dt * .5) > 0);
-    for (const b of blips) { bx.fillStyle = `rgba(${CY},${b.f.toFixed(2)})`; bx.beginPath(); bx.arc(b.x, b.y, 2.2, 0, 7); bx.fill();
-      bx.strokeStyle = `rgba(${CY},${(b.f * .5).toFixed(2)})`; bx.beginPath(); bx.arc(b.x, b.y, 2 + (1 - b.f) * 12, 0, 7); bx.stroke(); }
   }
   (function bgLoop() {
     setTimeout(() => requestAnimationFrame(bgLoop), 45);
     const now = performance.now(), dt = Math.min(.3, (now - bgT) / 1000); bgT = now;
-    if (theme !== 'redshift' || rsBg === 'map' || curTab !== 'g' || document.hidden) return;
+    if (theme !== 'redshift') return;
+    traceAcc += dt; while (traceAcc > .1) { traceAcc -= .1; traceSample(); }
+    if (curTab !== 'g' || document.hidden) return;
     bgResize(); if (!bgW || !bgH) return;
-    traceAcc += dt; while (traceAcc > .1) { traceAcc -= .1; trace.push([rsPsi, liveRpm || 0]); if (trace.length > 300) trace.shift(); }
     bx.setTransform(dpr, 0, 0, dpr, 0, 0); bx.clearRect(0, 0, bgW, bgH);
-    if (rsBg === 'streets' || rsBg === 'combo') drawStreets(dt, rsBg === 'combo');
-    if (rsBg === 'skyline' || rsBg === 'combo') drawSky(dt, rsBg === 'combo');
-    if (rsBg === 'trace') drawTrace();
-    if (rsBg === 'hex') drawHex(dt);
-    if (rsBg === 'sweep') drawSweep(dt);
+    drawTrace();
   })();
 
   // ----- Redshift: hex columns. The adapter's actual replies scroll by; one byte gets the cursor. No link = blank. -----
@@ -1708,7 +1617,6 @@
     document.querySelector('meta[name=theme-color]').content = THEME_BG[theme];
     resegAll(); lastPk = -2; illuminate();
     $('rfL').textContent = theme === 'lapiz' ? 'Pink from' : theme === 'redshift' ? 'Shift from' : 'Red from'; $('rtL').textContent = theme === 'lapiz' ? 'Full gold' : theme === 'redshift' ? 'Full cyan' : 'Full red';
-    if (theme === 'redshift') { buildCityMap(); applyRsBg(); }
   }
   $('themeBtn').onclick = () => { theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]; store.set('dd_theme', theme); applyTheme(); themeLight(); toast('Theme: ' + THEME_NAME[theme]); };
   applyTheme();
