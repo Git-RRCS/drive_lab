@@ -324,8 +324,10 @@
   .flecks, .topo { display:none; position:absolute; inset:0; z-index:-1; pointer-events:none; }
   body.lapiz .flecks, body.lapiz .topo { display:block; }
   .topo { width:100%; height:100%; }
-  .topo path { fill:none; stroke:rgba(110,150,255,.15); stroke-width:.8; }
-  .topo path.ix { stroke:rgba(150,180,255,.26); stroke-width:1.1; }
+  .topo path, .topo circle { fill:none; stroke-linecap:round; }
+  #topoA { stroke-width:7; opacity:.07; filter:blur(3px); }
+  #topoB { stroke-width:1.1; opacity:.30; }
+  .topo circle { stroke-width:1.4; }
   body.night .topo { opacity:.7; }
   .flecks i { position:absolute; width:var(--s); height:var(--s); border-radius:50%; background:rgb(var(--gold)); opacity:.26; transform:translate(-50%,-50%); }
   .flecks i::before, .flecks i::after { content:''; position:absolute; left:50%; top:50%; opacity:0; transform:translate(-50%,-50%); }
@@ -349,7 +351,7 @@
 </div>
 
 <section class="tab" id="tabGauges">
-<div class="hero" id="hero"><svg class="topo" id="topo"><path id="topoA"/><path class="ix" id="topoB"/></svg><div class="flecks" id="flecks"></div>
+<div class="hero" id="hero"><svg class="topo" id="topo"><path id="topoA"/><path class="ix" id="topoB"/><g id="rip"></g></svg><div class="flecks" id="flecks"></div>
   <div class="lbl" style="display:flex;justify-content:space-between"><span>RPM <b>×1000</b></span><span id="rpmLimitLbl"></span></div>
   <div class="tach" id="tach"></div>
   <div class="tachscale"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span></div>
@@ -405,7 +407,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v45 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v46 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="egg" id="egg"><div class="eggstatic"></div><img class="eggimg" id="eggImg" alt=""><div class="eggtint" id="eggTint"></div></div>
@@ -1294,29 +1296,42 @@
     }, 1000 / perSec * (.5 + Math.random()));
   })();
 
-  // ----- Lapiz: topographic contours that drift, and tighten as boost builds -----
-  let topoT = performance.now(), topoPh = 0, topoS = null;
-  (function topoLoop() {
-    setTimeout(() => requestAnimationFrame(topoLoop), 80);
+  // ----- Lapiz: the ward. Shimmering ribbons of light across the panel, blue at rest, turning gold as the sigil fills;
+  //        at full summon, rings ripple out from the sigil -----
+  let wardT = performance.now(), wardPh = 0, wardG = 0, lastRip = 0; const rips = [];
+  (function wardLoop() {
+    setTimeout(() => requestAnimationFrame(wardLoop), 60);
     if (theme !== 'lapiz' || curTab !== 'g' || document.hidden) return;
     const svg = $('topo'), w = svg.clientWidth, h = svg.clientHeight; if (!w || !h) return;
-    const now = performance.now(), dt = Math.min(.3, (now - topoT) / 1000); topoT = now;
-    const b = sumEnv / 7;
-    topoPh += dt * (.05 + b * .35);
-    const sTarget = 30 * (1 - .45 * b); topoS = topoS == null ? sTarget : topoS + (sTarget - topoS) * .06;
-    const cx = w * .2, cy = h * .76, maxR = Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy)) * 1.08, M = 72;
-    let dA = '', dB = '';
-    for (let k = 1; k * topoS * .8 < maxR; k++) {
-      let d = '';
-      for (let j = 0; j <= M; j++) {
-        const t = j / M * Math.PI * 2;
-        const n = .08 * Math.sin(3 * t + topoPh + k * .12) + .05 * Math.sin(5 * t - 1.3 * topoPh + k * .07) + .035 * Math.sin(2 * t + .7 * topoPh);
-        const r = k * topoS * (1 + n);
-        d += (j ? 'L' : 'M') + (cx + r * Math.cos(t)).toFixed(1) + ',' + (cy + r * Math.sin(t) * .82).toFixed(1);
+    const now = performance.now(), dt = Math.min(.3, (now - wardT) / 1000); wardT = now;
+    const b = sumEnv / 7, night = document.body.classList.contains('night');
+    wardPh += dt * (.35 + b * 1.4);
+    wardG += ((b * b) - wardG) * .05;                                  // gold creeps in with boost
+    const col = [Math.round(110 + 145 * wardG), Math.round(150 + 55 * wardG), Math.round(255 - 145 * wardG)].join(',');
+    let d = ''; const N = 9, step = 12;
+    for (let k = 0; k < N; k++) {
+      const y0 = h * (.06 + .88 * k / (N - 1)), A = 9 + 7 * Math.sin(k * 1.7), f1 = 2 * Math.PI / (w * (.55 + .12 * (k % 3)));
+      for (let x = -step; x <= w + step; x += step) {
+        const y = y0 + A * Math.sin(f1 * x - wardPh * (1 + .15 * k) + k) + 4 * Math.sin(f1 * 2.3 * x + wardPh * .8 + k * 2.1) * (1 + b);
+        d += (x < 0 ? 'M' : 'L') + x + ',' + y.toFixed(1);
       }
-      if (k % 5 === 0) dB += d + 'Z'; else dA += d + 'Z';
     }
-    svg.setAttribute('viewBox', `0 0 ${w} ${h}`); $('topoA').setAttribute('d', dA); $('topoB').setAttribute('d', dB);
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    for (const id of ['topoA', 'topoB']) { const el = $(id); el.setAttribute('d', d); el.style.stroke = `rgb(${col})`; }
+    $('topoB').style.opacity = ((.22 + .22 * b) * (night ? .7 : 1)).toFixed(2);
+    // ripples from the sigil while fully summoned
+    if (sumFull && now - lastRip > 1600) {
+      lastRip = now; const sr = document.querySelector('#summon .sig').getBoundingClientRect(), hr = $('hero').getBoundingClientRect();
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', sr.left - hr.left + sr.width / 2); c.setAttribute('cy', sr.top - hr.top + sr.height * .42);
+      $('rip').appendChild(c); rips.push({ c, t: now });
+    }
+    for (let i = rips.length - 1; i >= 0; i--) {
+      const r = rips[i], age = (now - r.t) / 2600;
+      if (age >= 1) { r.c.remove(); rips.splice(i, 1); continue; }
+      r.c.setAttribute('r', (20 + age * Math.max(w, h) * .7).toFixed(1));
+      r.c.style.stroke = `rgba(255,214,130,${(.45 * (1 - age) * (night ? .7 : 1)).toFixed(3)})`;
+    }
   })();
   function applyTheme() {
     THEMES.forEach(t => document.body.classList.toggle(t, t === theme));
