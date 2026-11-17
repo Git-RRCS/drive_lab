@@ -691,7 +691,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v59 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v60 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="chat" id="chat"></div><div class="stk" id="stk"></div>
@@ -1738,21 +1738,21 @@
   const tail = () => { const n = 1 + Math.floor(Math.random() * 3), o = new Set(); while (o.size < n) o.add(pick(EMO)); return ' ' + [...o].join(''); };
   const OPEN = ['WHOA!','Zoom zoom!','Yeehaw!','Eeek!','Buckle up, buttercup!','Woo-hoo!','Brrrrm!','Weeee!','Hold on to your sprinkles!','Holy guacamole!','Oh my gumdrops!','Yippee!','Hooray!','Ka-ZOOM!'];
   const LINES = {
-    greet: ['Sprinkles mode is ON!','Who turned on the candy?','Hiii! We are your road trip buddies!','Party in the car! Party in the car!','Let\'s make this drive super sparkly!','Ready, set, SNACKS!'],
-    hello: ['The car is talking to me! Hi car!','Engine is awake! Let\'s goooo!','Ready for an adventure?','Seatbelts on? Snacks ready?','Beep boop! Car connected!','I can hear the engine humming!'],
+    greet: ['Hi Ayla!! Sprinkles mode is ON!','Ayla is in the car! Everybody wave! 👋','Welcome aboard, Captain Ayla!','Sprinkles mode is ON!','Who turned on the candy?','Hiii! We are your road trip buddies!','Party in the car! Party in the car!','Let\'s make this drive super sparkly!','Ready, set, SNACKS!'],
+    hello: ['Hi Ayla! The car says good morning!','Ayla, the engine is awake! Let\'s goooo!','Copilot Ayla reporting for duty?','The car is talking to me! Hi car!','Engine is awake! Let\'s goooo!','Ready for an adventure?','Seatbelts on? Snacks ready?','Beep boop! Car connected!','I can hear the engine humming!'],
     cold: ['Engine is still sleepy, let\'s go gentle!','Brrr! The engine needs a minute to wake up.','Shhh, the engine is still yawning.','Engine is putting on its fuzzy socks.'],
-    ready: ['Engine is all warmed up like hot cocoa!','Toasty and ready to play!','The engine finished its stretches!','Warm and happy, like a cinnamon roll!'],
+    ready: ['Ayla, the engine is all warmed up! Let\'s play!','Engine is all warmed up like hot cocoa!','Toasty and ready to play!','The engine finished its stretches!','Warm and happy, like a cinnamon roll!'],
     b10: ['A little zoom! {P} psi!','The turbo just woke up!','Turbo says hello at {P} psi!','Tiny zoomies detected!'],
     b15: ['{P} psi of pure sugar!','We hit {P} psi!','The turbo is giggling at {P} psi!','That\'s {P} psi of zoomies!','My cupcake flew off at {P} psi!'],
-    b20: ['{P} psi?! My donut fell off!','Turbo is doing a happy dance at {P} psi!','{P} psi! I can taste the rainbow!','Hold my lollipop! {P} psi!','The sprinkles are flying! {P} psi!'],
-    b25: ['MAXIMUM GUMDROP! {P} psi!','{P} psi! Is this a rocket ship?!','We are going to the moon! {P} psi!','{P} psi! My ears popped like bubblegum!','SUPER DUPER TURBO! {P} psi!'],
-    peak: ['NEW RECORD! {P} psi!','High score! {P} psi! Put it on the fridge!','That beat the old record! {P} psi!','Gold star! {P} psi is the new best!','Somebody call the record book! {P}!'],
-    again: ['That was fun! Again? 😆','Wheee! Can we do it again?','Best ride ever! (so far)','My hair is all swooshy now!','I need a snack after that one.'],
-    shift: ['Shift! Shift! Shift!','Time for the next gear!','Engine says: bigger gear please!','Ding ding! Shift time!','Gear up, buttercup!'],
+    b20: ['Ayla, did you feel that?! {P} psi!','Hold on, Ayla! {P} psi!','{P} psi?! My donut fell off!','Turbo is doing a happy dance at {P} psi!','{P} psi! I can taste the rainbow!','Hold my lollipop! {P} psi!','The sprinkles are flying! {P} psi!'],
+    b25: ['AYLA! We are basically a rocket! {P} psi!','MAXIMUM GUMDROP! {P} psi!','{P} psi! Is this a rocket ship?!','We are going to the moon! {P} psi!','{P} psi! My ears popped like bubblegum!','SUPER DUPER TURBO! {P} psi!'],
+    peak: ['NEW RECORD! Ayla, you\'re our lucky charm! {P} psi!','Ayla, write this down: {P} psi! New best!','NEW RECORD! {P} psi!','High score! {P} psi! Put it on the fridge!','That beat the old record! {P} psi!','Gold star! {P} psi is the new best!','Somebody call the record book! {P}!'],
+    again: ['Ayla, rate that ride from 1 to 10!','Did Ayla giggle? I think Ayla giggled!','That was fun! Again? 😆','Wheee! Can we do it again?','Best ride ever! (so far)','My hair is all swooshy now!','I need a snack after that one.'],
+    shift: ['Ayla says: shift time!','Shift! Shift! Shift!','Time for the next gear!','Engine says: bigger gear please!','Ding ding! Shift time!','Gear up, buttercup!'],
     warm: ['The engine is getting toasty, let\'s chill a bit 🧊','Engine needs a little break, nice and easy!','Ooh, engine is warm, let\'s cruise gently.'],
     hot: ['Uh oh, the engine is too hot! Time for a break 🧊'],
     knock: ['Engine hiccup! 🤧','Bless you, engine!','Did the engine just sneeze?','Hic! Excuse me!'],
-    idle: ['Are we there yet?','I spy with my little eye... something sparkly!','What do you call a sheep\'s car? A Lamb-orghini!','What car does a snake drive? An Ana-honda!',
+    idle: ['Ayla, what\'s your favorite candy?','Ayla, can you spot something purple outside?','Ayla, if you had a dragon, what would you name it?','You are awesome, Ayla. Just so you know 💖','Ayla, tell a joke and I\'ll rate it!','Ayla, what should we name the car?','Fun fact: Ayla is the coolest copilot ever!','Are we there yet?','I spy with my little eye... something sparkly!','What do you call a sheep\'s car? A Lamb-orghini!','What car does a snake drive? An Ana-honda!',
       'What do you call a sleepy car? A snooze-mobile!','Why did the car go to school? To get a little smarter-car!','Fun fact: turbos can spin over 100,000 times a minute!',
       'Fun fact: an octopus has three hearts!','Fun fact: a group of flamingos is called a flamboyance!','Fun fact: bananas are berries, but strawberries aren\'t!',
       'Fun fact: honey never goes bad!','Fun fact: sloths can hold their breath longer than dolphins!','Would you rather drive a cupcake car or a taco truck?',
