@@ -42,7 +42,7 @@
 </head>
 <body>
 <h1>Bandersnatch · Lab</h1>
-<div class="sub">YX_LED fiber engine · MySmartLED protocol · <b>v60</b> · <a href="drive.html" style="color:#4ea1ff">Open driving screen →</a></div>
+<div class="sub">YX_LED fiber engine · MySmartLED protocol · <b>v61</b> · <a href="drive.html" style="color:#4ea1ff">Open driving screen →</a></div>
 
 <div class="card">
   <button class="primary" id="btnConnect">Connect to YX_LED</button>
@@ -118,12 +118,14 @@
   <div class="hint" style="margin-top:6px">Checks codes 1000–4FFF and F400–F4FF (~16,600) on the selected module. About 10 min each, parked, ignition on. Pause/resume is safe. Watching reads every module you've discovered.</div>
 
   <label>2 · Watch <span id="scWatchStat">–</span></label>
-  <div class="row"><button id="scWatch">Start watching</button><button id="scWatchStop">Stop</button></div>
+  <div class="row"><button id="scWatch">Start watching</button><button id="scFast">Fast watch</button><button id="scWatchStop">Stop</button></div>
+  <div class="hint" style="margin-top:4px">Fast watch reads only the codes that look like switches or temperatures (a few seconds per sweep instead of ~40), so it catches mode and gear changes. Use it after a normal watch has run once.</div>
   <div class="hint" style="margin:8px 0 4px">Tag what the car is doing — tap the current drive mode:</div>
   <div class="row" id="scModes"></div>
-  <div class="hint" style="margin:8px 0 4px">…and the gearbox: D, S, or Manual (and the gear, if you know it):</div>
+  <div class="hint" style="margin:8px 0 4px">…the gearbox position:</div>
   <div class="row" id="scDsg"></div>
-  <div class="row" style="margin-top:8px"><input type="text" id="scGear" inputmode="numeric" placeholder="Gear (1-6)"><button id="scGearLog" style="flex:0 0 auto">Log</button></div>
+  <div class="hint" style="margin:8px 0 4px">…and the gear shown on the cluster (tap again when it changes):</div>
+  <div class="row" id="scGears"></div>
   <div class="row" style="margin-top:8px"><input type="text" id="scOil" inputmode="numeric" placeholder="Oil °F shown on cluster"><button id="scOilLog" style="flex:0 0 auto">Log</button></div>
   <div class="hint" id="scLast" style="margin-top:6px"></div>
 
@@ -421,7 +423,7 @@
   const scSave = () => { try { localStorage.setItem('sc_state', JSON.stringify(SC)); } catch(e) { log('scanner: storage full?', e.message); } };
   const RANGE = []; for (let d = 0x1000; d <= 0x4FFF; d++) RANGE.push(d); for (let d = 0xF400; d <= 0xF4FF; d++) RANGE.push(d);
   const h4 = d => d.toString(16).toUpperCase().padStart(4, '0');
-  let scRun = false, scMode = '', scDsg = '', scGearPending = null, scOilPending = null, wakeL = null;
+  let scRun = false, scMode = '', scDsg = '', scGear = null, scGearPending = null, scOilPending = null, wakeL = null;
   const keepAwake = async () => { try { wakeL = wakeL || await navigator.wakeLock.request('screen'); } catch(e) {} };
 
   function scMsg(t, bad) { $('scConn').innerHTML = bad ? `<b class="bad">${t}</b>` : t; }
@@ -479,19 +481,30 @@
     b.onclick = () => { if (scRun) return; scMod = m; [...$('scMods').children].forEach(x => x.className = x.textContent === MODS[m].name ? 'on' : ''); scStat(); };
     $('scMods').appendChild(b); }
   $('scMods').children[0].className = 'on';
-  for (const d of ['D','S','Manual']) { const b = document.createElement('button'); b.textContent = d; b.style.padding = '10px 4px'; b.style.fontSize = '14px';
+  for (const d of ['P','R','N','D','S','Manual']) { const b = document.createElement('button'); b.textContent = d; b.style.padding = '10px 4px'; b.style.fontSize = '14px';
     b.onclick = () => { scDsg = d; [...$('scDsg').children].forEach(x => x.className = x.textContent === d ? 'on' : ''); log('gearbox tag:', d); };
     $('scDsg').appendChild(b); }
-  $('scGearLog').onclick = () => { const v = parseInt($('scGear').value); if (!isNaN(v)) { scGearPending = v; log('gear tag:', v, '(attached to next snapshot)'); $('scGear').value = ''; } };
+  for (const g of ['–',1,2,3,4,5,6,7]) { const b = document.createElement('button'); b.textContent = g; b.style.padding = '10px 2px'; b.style.fontSize = '14px';
+    b.onclick = () => { scGear = g === '–' ? null : g; [...$('scGears').children].forEach(x => x.className = x.textContent == String(g) ? 'on' : ''); log('gear tag:', g); };
+    $('scGears').appendChild(b); }
   const MODES = ['Comfort','Normal','Race','Individual'];
   for (const m of MODES) { const b = document.createElement('button'); b.textContent = m; b.style.padding = '10px 4px'; b.style.fontSize = '14px';
     b.onclick = () => { scMode = m; [...$('scModes').children].forEach(x => x.className = x.textContent === m ? 'on' : ''); log('mode tag:', m); };
     $('scModes').appendChild(b); }
   $('scOilLog').onclick = () => { const v = parseFloat($('scOil').value); if (!isNaN(v)) { scOilPending = v; log('oil tag:', v, '°F (attached to next snapshot)'); $('scOil').value = ''; } };
 
+  let scFastOn = false;
+  // shortlist: every 1-byte code (switches, gears, modes, simple temps) + small 2-byte enums + 2-byte values that read as a temperature
+  const looksSwitch = h => { const n = parseInt(h, 16); return h.length === 2 || (h.length === 4 && n > 0 && n <= 0x10); };
+  const looksTemp = h => { const n = parseInt(h, 16);
+    return h.length === 4 && (((n - 2731.5) / 10 > 10 && (n - 2731.5) / 10 < 140) || (n / 10 > 10 && n / 10 < 140)); };   // kelvin x10, or x0.1 °C
+  $('scFast').onclick = () => { scFastOn = true; $('scWatch').onclick(); };
   $('scWatch').onclick = async () => {
     if (scRun) return;
-    const plan = Object.keys(MODS).map(m => [m, Object.keys(SC.mods[m].found)]).filter(([, d]) => d.length);
+    const fast = scFastOn; scFastOn = false;
+    const pickD = m => Object.keys(SC.mods[m].found).filter(d => !fast || looksSwitch(SC.mods[m].found[d]) || looksTemp(SC.mods[m].found[d]));
+    const plan = Object.keys(MODS).map(m => [m, pickD(m)]).filter(([, d]) => d.length);
+    scFastOn = fast;
     const total = plan.reduce((a, [, d]) => a + d.length, 0);
     if (!total) { log('scanner: run discovery first'); return; }
     try { await scInit(); } catch(e) { scMsg(e.message, true); log('scanner:', e.message); return; }
@@ -502,11 +515,11 @@
       if (!scRun && Object.keys(v).length < total / 2) break;
       await scSelect('7E0');
       const cr = await obdCmd('01051', 1500).catch(() => ''); const cm = cr.replace(/\s+/g,'').match(/4105([0-9A-F]{2})/i);
-      const snap = { t: new Date().toISOString(), mode: scMode, dsg: scDsg, gear: scGearPending, oilF: scOilPending, coolF: cm ? Math.round((parseInt(cm[1],16) - 40) * 9/5 + 32) : null, v };
+      const snap = { t: new Date().toISOString(), mode: scMode, dsg: scDsg, gear: scGear, oilF: scOilPending, fast: !!scFastOn, coolF: cm ? Math.round((parseInt(cm[1],16) - 40) * 9/5 + 32) : null, v };
       SC.snaps.push(snap); scOilPending = null; scGearPending = null; scSave(); scStat();
       $('scLast').textContent = `Last sweep ${((performance.now() - t0) / 1000).toFixed(1)} s · ${snap.mode || 'no mode'} · ${snap.dsg || 'no gearbox tag'}${snap.gear != null ? ' · gear ' + snap.gear : ''}${snap.oilF != null ? ' · oil ' + snap.oilF + '°F' : ''} · coolant ${snap.coolF ?? '–'}°F`;
     }
-    scRun = false; scSave(); scStat();
+    scRun = false; scFastOn = false; scSave(); scStat();
   };
   $('scWatchStop').onclick = () => { scRun = false; };
 
