@@ -691,7 +691,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v61 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v62 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="chat" id="chat"></div><div class="stk" id="stk"></div>
@@ -1325,7 +1325,6 @@
   // Ambient ramp: dash-strip blue -> cool white (white LED) at full; no red, it's the grown-up one
   const AMB_BLUE = [0,80,255,0], AMB_WHITE = [40,70,160,255];
   function rampColor(base, mix) {
-    if (typeof theme !== 'undefined' && theme === 'sprinkles') { const c = CC[ccIdx % CC.length]; return base.map((v, i) => Math.round(v + (c[i] - v) * Math.min(1, mix * 1.6))); }
     if (typeof theme !== 'undefined' && theme === 'ambient') return base.map((v, i) => Math.round(v + (AMB_WHITE[i] - v) * mix));
     if (typeof theme !== 'undefined' && theme === 'redshift') {
       if (mix <= .5) { const t = mix / .5; return base.map((v, i) => Math.round(v + (RS_MAG[i] - v) * t)); }
@@ -1341,6 +1340,7 @@
   let env = null, sentBright = null, sentSpeed = null, twSpeed = null, twLast = 0, twChanges = [];
   function boostReact(psi) {
     if (!lightChar || cueBusy || !L[1] || (!reGlow && !reTwinkle)) return;
+    if (theme === 'sprinkles') return;                         // Sprinkles runs its own light show
     const now = Date.now(), base = L[9];
     // brightness envelope: fast attack, slow release
     let bright = base, mix = 0;
@@ -1728,7 +1728,6 @@
 
 
   // ================= Sprinkles: candy friends, chat pop-ups, stickers, sprinkles + bubbles, cotton-candy starlights =================
-  let ccIdx = 0;
   const FRIENDS = [['Gumdrop','🍬','#ff5fb7'],['Turbo Kitty','🐱','#7fd8ff'],['Sprinkle Bot','🤖','#b28dff'],['Captain Waffle','🧇','#ffd23f'],
     ['Unicorn Mechanic','🦄','#ff8fd0'],['Space Hamster','🐹','#ffb36b'],['Cupcake','🧁','#ff7aa8'],['Dino Dan','🦖','#7ef2c8'],
     ['Moon Pie','🌙','#c4b5fd'],['Taco Cat','🌮','#fde047'],['Professor Pickle','🥒','#a3e635'],['Robo Llama','🦙','#f0abfc'],
@@ -1812,14 +1811,23 @@
     if ((liveRpm || 0) > 1200 || psi > 2) cdIdleSince = now;
     if (now - cdIdleSince > 45000 && now - cdLastIdle > 120000 + Math.random() * 60000) { cdLastIdle = now; candyEvent('idle'); }
   }, 300);
-  // starlights: cotton candy colors that hop faster the harder you boost (never faster than ~3 changes a second)
-  let ccLast = 0;
+  // starlights: Sprinkles' own show, independent of the Boost glow switch.
+  //   cruising: pastels drift slowly; on boost: they cycle faster and brighter (up to ~6 changes a second);
+  //   at full boost (the "Full candy" slider, or a full sigil): solid gold with little white sparkles.
+  const PASTEL = [[255,70,160,40],[90,160,255,50],[180,100,255,40],[70,255,170,45],[255,150,90,40],[255,225,60,40]];
+  const CANDY_GOLD = [255,145,0,0], CANDY_SPARK = [255,200,120,220];
+  let cdlLast = 0, cdlIdx = 0, cdlOn = false;
   setInterval(() => {
-    if (theme !== 'sprinkles' || !lightChar || cueBusy || !L[1] || !sentMix || sentMix < .05) return;
-    const gap = 1200 - Math.min(1, sentMix) * 870; if (Date.now() - ccLast < gap) return; ccLast = Date.now();
-    ccIdx++; const f = L.slice(); if (sentBright != null) f[9] = sentBright; if (sentSpeed != null) f[14] = sentSpeed;
-    const rc = rampColor([L[5], L[6], L[7], L[8]], sentMix); for (let i = 0; i < 4; i++) f[5 + i] = rc[i]; liveSend(f);
-  }, 100);
+    if (theme !== 'sprinkles' || !lightChar || cueBusy || !L[1]) { if (cdlOn && lightChar && theme !== 'sprinkles') { cdlOn = false; liveSend(L); } return; }
+    cdlOn = true;
+    const now = Date.now(), psi = rsPsi, top = Math.max(10, redFull);
+    const x = Math.max(0, Math.min(1, (psi - 3) / (top - 3))), gold = psi >= top || sumFull;
+    const gap = gold ? 160 : psi < 3 ? 1600 : 850 - x * 680;          // 850 ms -> 170 ms between colors
+    if (now - cdlLast < gap) return; cdlLast = now; cdlIdx++;
+    const c = gold ? (cdlIdx % 4 === 0 ? CANDY_SPARK : CANDY_GOLD) : PASTEL[cdlIdx % PASTEL.length];
+    const f = L.slice(); [f[5], f[6], f[7], f[8]] = c; f[9] = Math.round(L[9] + (gold ? 1 : x) * (100 - L[9]));   // motor bytes untouched
+    liveSend(f);
+  }, 40);
   // background: sprinkles fall (faster on boost), bubbles rise, confetti bursts
   const cdots = [], bubs = [], conf = []; let cdT = performance.now();
   const SPR = ['#ff5fb7','#7fd8ff','#b28dff','#ffd23f','#7ef2c8','#ffffff'];
