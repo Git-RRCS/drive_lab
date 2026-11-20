@@ -1793,6 +1793,7 @@
   }
   function candyBurst() { candyMsg(pick(['You found the secret sparkle button!','Tickles! Hee hee!','Boop! 💖','Confetti cannon, FIRE!','That tickles my sprinkles!']), pick(FRIENDS)); sticker(['🎉','🦄','🌈','🍭','💖','✨'], 5); confetti(120); }
   // event watcher (boost thresholds once per pull, pull end, peak, knock, link, idle chit-chat)
+  let cdBest = 0;                 // this trip's record, starts fresh each time the app opens
   let cdPend = null, cdLevel = 0, cdPull = false, cdPk = 0, cdLink = false, cdIdleSince = Date.now(), cdLastIdle = Date.now(), cdKnock = 0, cdWarn = {};
   setInterval(() => {
     if (theme !== 'sprinkles') return;
@@ -1803,7 +1804,7 @@
     if (lv > cdLevel) { if (lv >= 15 || cdLevel === 0) candyEvent('b' + lv, psi); cdLevel = lv; }
     const inPull = cdPull ? psi > 2 : psi > 5;                  // Sprinkles' own gentle 'pull': starts at 5 psi, ends under 2
     if (inPull) cdPk = Math.max(cdPk, psi);
-    if (!inPull && cdPull) { if (cdPk >= peak - .05 && cdPk > 6) candyEvent('peak', peak); else setTimeout(() => candyEvent('again'), 1200); cdPk = 0; }
+    if (!inPull && cdPull) { if (cdPk > 6 && cdPk > cdBest + .3) { cdBest = cdPk; candyEvent('peak', cdPk); } else setTimeout(() => candyEvent('again'), 1200); cdPk = 0; }
     if (psi < 2) cdLevel = 0;
     cdPull = inPull;
     if (['200A','200B','200C','200D'].some(d => tvT[d] && now - tvT[d] < 1500 && tv[d] < -2) && now - cdKnock > 20000) { cdKnock = now; candyEvent('knock'); }
