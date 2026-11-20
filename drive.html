@@ -691,7 +691,7 @@
 </section>
 
 <div class="tabs"><button id="tbG">Gauges</button><button id="tbT">Tune</button><button id="tbL">Lights</button></div>
-<div class="foot"><span id="foot">v62 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
+<div class="foot"><span id="foot">v63 · tap peak: reset</span><span><button id="themeBtn">Theme</button> · <a href="./">Lab</a></span></div>
 
 <div class="alarm" id="alarm"><div class="what" id="alarmWhat"></div><div class="num" id="alarmNum"></div><div class="hint2">Tap to dismiss</div></div>
 <div class="chat" id="chat"></div><div class="stk" id="stk"></div>
@@ -1799,12 +1799,12 @@
     const now = Date.now(), psi = rsPsi, link = now - hexLast < 2000;
     if (cdPend && now - msgLast >= 3500) { const p = cdPend; cdPend = null; candyEvent(p.type, p.val); }
     if (link && !cdLink) candyEvent('hello'); cdLink = link;
-    const lv = psi >= 25 ? 25 : psi >= 20 ? 20 : psi >= 15 ? 15 : psi >= 10 ? 10 : 0;
+    const lv = psi >= 12 ? 25 : psi >= 10 ? 20 : psi >= 7 ? 15 : psi >= 4 ? 10 : 0;   // gentle thresholds for Sprinkles
     if (lv > cdLevel) { if (lv >= 15 || cdLevel === 0) candyEvent('b' + lv, psi); cdLevel = lv; }
-    const inPull = !!pull;
+    const inPull = cdPull ? psi > 2 : psi > 5;                  // Sprinkles' own gentle 'pull': starts at 5 psi, ends under 2
     if (inPull) cdPk = Math.max(cdPk, psi);
-    if (!inPull && cdPull) { if (cdPk >= peak - .05 && cdPk > 8) candyEvent('peak', peak); else setTimeout(() => candyEvent('again'), 1200); cdPk = 0; }
-    if (psi < 3) cdLevel = 0;
+    if (!inPull && cdPull) { if (cdPk >= peak - .05 && cdPk > 6) candyEvent('peak', peak); else setTimeout(() => candyEvent('again'), 1200); cdPk = 0; }
+    if (psi < 2) cdLevel = 0;
     cdPull = inPull;
     if (['200A','200B','200C','200D'].some(d => tvT[d] && now - tvT[d] < 1500 && tv[d] < -2) && now - cdKnock > 20000) { cdKnock = now; candyEvent('knock'); }
     for (const k in st8) { const l = st8[k].level; if (l > (cdWarn[k] || 0)) candyEvent(l === 2 ? 'hot' : 'warm'); cdWarn[k] = l; }
@@ -1815,14 +1815,15 @@
   //   cruising: pastels drift slowly; on boost: they cycle faster and brighter (up to ~6 changes a second);
   //   at full boost (the "Full candy" slider, or a full sigil): solid gold with little white sparkles.
   const PASTEL = [[255,70,160,40],[90,160,255,50],[180,100,255,40],[70,255,170,45],[255,150,90,40],[255,225,60,40]];
+  const CANDY_TOP = 12;            // psi: full gold here, no need to gun it with a kid aboard
   const CANDY_GOLD = [255,145,0,0], CANDY_SPARK = [255,200,120,220];
   let cdlLast = 0, cdlIdx = 0, cdlOn = false;
   setInterval(() => {
     if (theme !== 'sprinkles' || !lightChar || cueBusy || !L[1]) { if (cdlOn && lightChar && theme !== 'sprinkles') { cdlOn = false; liveSend(L); } return; }
     cdlOn = true;
-    const now = Date.now(), psi = rsPsi, top = Math.max(10, redFull);
-    const x = Math.max(0, Math.min(1, (psi - 3) / (top - 3))), gold = psi >= top || sumFull;
-    const gap = gold ? 160 : psi < 3 ? 1600 : 850 - x * 680;          // 850 ms -> 170 ms between colors
+    const now = Date.now(), psi = rsPsi, top = CANDY_TOP;
+    const x = Math.max(0, Math.min(1, (psi - 2) / (top - 2))), gold = psi >= top;
+    const gap = gold ? 120 : psi < 3 ? 1100 : 600 - x * 480;          // 600 ms -> 120 ms between colors
     if (now - cdlLast < gap) return; cdlLast = now; cdlIdx++;
     const c = gold ? (cdlIdx % 4 === 0 ? CANDY_SPARK : CANDY_GOLD) : PASTEL[cdlIdx % PASTEL.length];
     const f = L.slice(); [f[5], f[6], f[7], f[8]] = c; f[9] = Math.round(L[9] + (gold ? 1 : x) * (100 - L[9]));   // motor bytes untouched
